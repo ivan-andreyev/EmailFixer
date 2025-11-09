@@ -1,5 +1,5 @@
 @inherits LayoutComponentBase
-@inject IUserService UserService
+@inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 
 <div class="page">
@@ -30,16 +30,30 @@
                         </a>
                     </li>
                 </ul>
-                @if (CurrentUser != null)
-                {
-                    <div class="nav-divider ms-3"></div>
-                    <div class="navbar-text ms-3">
-                        <span class="badge bg-success me-2">
-                            <i class="fas fa-coins me-1"></i> @CurrentUser.CreditsAvailable
-                        </span>
-                        <span class="text-light small">@CurrentUser.Email</span>
-                    </div>
-                }
+                <AuthorizeView>
+                    <Authorized>
+                        <div class="nav-divider ms-3"></div>
+                        <div class="navbar-text ms-3">
+                            @if (CurrentUser != null)
+                            {
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-coins me-1"></i> @CurrentUser.CreditsAvailable
+                                </span>
+                                <span class="text-light small me-3">@CurrentUser.Email</span>
+                            }
+                            <button class="btn btn-sm btn-outline-light" @onclick="HandleLogout">
+                                <i class="fas fa-sign-out-alt me-1"></i> Logout
+                            </button>
+                        </div>
+                    </Authorized>
+                    <NotAuthorized>
+                        <div class="ms-3">
+                            <a class="btn btn-sm btn-primary" href="/login">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </div>
+                    </NotAuthorized>
+                </AuthorizeView>
             </div>
         </div>
     </nav>
@@ -60,11 +74,17 @@
 </div>
 
 @code {
-    private UserModel? CurrentUser;
+    private UserAuthDto? CurrentUser;
 
     protected override async Task OnInitializedAsync()
     {
-        CurrentUser = await UserService.GetCurrentUserAsync();
+        CurrentUser = await AuthService.GetCurrentUserAsync();
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 
     private string IsActiveRoute(string route)

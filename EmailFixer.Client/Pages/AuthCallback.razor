@@ -1,0 +1,123 @@
+@page "/auth-callback"
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>Signing In - Email Fixer</PageTitle>
+
+<div class="callback-container">
+    <div class="callback-card">
+        @if (_isProcessing)
+        {
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h3 class="mb-2">Signing you in...</h3>
+                <p class="text-muted">Please wait while we complete your authentication</p>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="text-center">
+                <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+                <h3 class="mb-2 text-danger">Authentication Failed</h3>
+                <p class="text-muted mb-4">@_errorMessage</p>
+                <button class="btn btn-primary" @onclick="RedirectToLogin">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Back to Login
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .callback-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .callback-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 3rem;
+        max-width: 500px;
+        width: 100%;
+    }
+</style>
+
+@code {
+    private bool _isProcessing = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HandleCallback();
+    }
+
+    private async Task HandleCallback()
+    {
+        try
+        {
+            var uri = new Uri(NavigationManager.Uri);
+            var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+            var code = queryParams["code"];
+            var error = queryParams["error"];
+
+            // Check for OAuth error
+            if (!string.IsNullOrEmpty(error))
+            {
+                _errorMessage = $"Google OAuth error: {error}";
+                _isProcessing = false;
+                return;
+            }
+
+            // Check for authorization code
+            if (string.IsNullOrEmpty(code))
+            {
+                _errorMessage = "Authorization code not found in callback URL";
+                _isProcessing = false;
+                return;
+            }
+
+            // Retrieve code verifier from localStorage
+            var codeVerifier = await LocalStorage.GetItemAsStringAsync("code_verifier");
+            if (string.IsNullOrEmpty(codeVerifier))
+            {
+                _errorMessage = "Code verifier not found. Please try logging in again.";
+                _isProcessing = false;
+                return;
+            }
+
+            // Exchange code for JWT token
+            var success = await AuthService.HandleGoogleCallbackAsync(code, codeVerifier);
+
+            if (success)
+            {
+                // Redirect to home page
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                _errorMessage = "Failed to authenticate with Google. Please try again.";
+                _isProcessing = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An unexpected error occurred: {ex.Message}";
+            _isProcessing = false;
+        }
+    }
+
+    private void RedirectToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+}

@@ -54,7 +54,8 @@
       "Bash(gcloud storage ls:*)",
       "Bash(gsutil -m setmeta:*)",
       "Bash(dotnet test:*)",
-      "Bash(gcloud run services logs read:*)"
+      "Bash(gcloud run services logs read:*)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

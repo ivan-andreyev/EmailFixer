@@ -2,12 +2,14 @@ using EmailFixer.Api.Models;
 using EmailFixer.Core.Validators;
 using EmailFixer.Infrastructure.Data.Entities;
 using EmailFixer.Infrastructure.Data.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmailFixer.Api.Controllers;
 
 [ApiController]
 [Route("api/email")]
+[Authorize]
 public class EmailValidationController : ControllerBase
 {
     private readonly IEmailValidator _emailValidator;

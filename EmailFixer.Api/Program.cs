@@ -3,10 +3,15 @@ using EmailFixer.Api.Validators;
 using EmailFixer.Core.Validators;
 using EmailFixer.Infrastructure.Data;
 using EmailFixer.Infrastructure.Data.Repositories;
+using EmailFixer.Infrastructure.Services.Authentication;
 using EmailFixer.Infrastructure.Services.Payment;
+using EmailFixer.Shared.Models;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +46,46 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssemblyContaining<EmailValidationRequestValidator>();
 
+// JWT Configuration
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtSettings = new JwtSettings
+{
+    Secret = jwtSection.GetValue<string>("Secret") ?? "your-secret-key-must-be-at-least-32-characters-long-for-security",
+    Issuer = jwtSection.GetValue<string>("Issuer") ?? "emailfixer-api",
+    Audience = jwtSection.GetValue<string>("Audience") ?? "emailfixer-client",
+    ExpirationMinutes = jwtSection.GetValue<int>("ExpirationMinutes", 60),
+    RefreshExpirationDays = jwtSection.GetValue<int>("RefreshExpirationDays", 7)
+};
+
+builder.Services.AddSingleton(jwtSettings);
+builder.Services.AddOptions<JwtSettings>().Bind(jwtSection);
+
+// Google OAuth Configuration
+var googleSection = builder.Configuration.GetSection("GoogleOAuth");
+builder.Services.AddOptions<GoogleOAuthSettings>().Bind(googleSection);
+
+// JWT Authentication
+var key = Encoding.ASCII.GetBytes(jwtSettings.Secret ?? "your-secret-key-must-be-at-least-32-characters-long-for-security");
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
 // Database Configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<EmailFixerDbContext>(options =>
@@ -63,6 +108,12 @@ builder.Services.AddScoped<ICreditTransactionRepository, CreditTransactionReposi
 
 // Core Services
 builder.Services.AddSingleton<IEmailValidator, EmailValidator>();
+
+// Authentication Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// HTTP Client for Google OAuth
+builder.Services.AddHttpClient();
 
 // Payment Services
 var paddleConfig = new PaddleConfiguration(
@@ -115,6 +166,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("BlazorClient");
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Health check endpoint for Docker and Kubernetes

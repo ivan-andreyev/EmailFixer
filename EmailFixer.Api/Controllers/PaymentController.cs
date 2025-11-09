@@ -2,6 +2,7 @@ using EmailFixer.Api.Models;
 using EmailFixer.Infrastructure.Data.Entities;
 using EmailFixer.Infrastructure.Data.Repositories;
 using EmailFixer.Infrastructure.Services.Payment;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 
@@ -9,6 +10,7 @@ namespace EmailFixer.Api.Controllers;
 
 [ApiController]
 [Route("api/payment")]
+[Authorize]
 public class PaymentController : ControllerBase
 {
     private readonly IPaddlePaymentService _paddleService;

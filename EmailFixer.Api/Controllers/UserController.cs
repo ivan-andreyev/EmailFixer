@@ -1,12 +1,14 @@
 using EmailFixer.Api.Models;
 using EmailFixer.Infrastructure.Data.Entities;
 using EmailFixer.Infrastructure.Data.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmailFixer.Api.Controllers;
 
 [ApiController]
 [Route("api/users")]
+[Authorize]
 public class UserController : ControllerBase
 {
     private readonly IUserRepository _userRepository;

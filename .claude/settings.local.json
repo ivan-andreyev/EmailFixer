@@ -57,7 +57,8 @@
       "Bash(gcloud run services logs read:*)",
       "Bash(xargs cat:*)",
       "Bash(find:*)",
-      "Bash(pwsh:*)"
+      "Bash(pwsh:*)",
+      "Bash(git remote:*)"
     ],
     "deny": [],
     "ask": []

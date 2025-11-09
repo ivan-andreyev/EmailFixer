@@ -7,14 +7,14 @@
 
 <PageTitle>Email Fixer - Validate Email Addresses</PageTitle>
 
-<div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-lg-5">
-            <div class="card shadow">
+<div class="container-fluid mt-4 email-validator-container">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-primary text-white">
-                    <h4><i class="fas fa-envelope-circle-check"></i> Email Validator</h4>
+                    <h5 class="mb-0"><i class="fas fa-envelope-circle-check"></i> Email Validator</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="mb-3">
                         <label class="form-label">Enter email addresses (one per line):</label>
                         <textarea @bind="EmailInput" @oninput="OnEmailInputChanged"
@@ -69,12 +69,12 @@
             </div>
         </div>
 
-        <div class="col-lg-7">
-            @if (ValidationResults.Any())
-            {
-                <div class="card shadow">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                @if (ValidationResults.Any())
+                {
                     <div class="card-header bg-secondary text-white">
-                        <h4><i class="fas fa-clipboard-check"></i> Validation Results</h4>
+                        <h5 class="mb-0"><i class="fas fa-clipboard-check"></i> Validation Results</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
@@ -146,8 +146,18 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            }
+                }
+                else
+                {
+                    <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 400px;">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-inbox" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem;"></i>
+                            <h5>No results yet</h5>
+                            <p class="mb-0">Enter email addresses and click Validate to see results here</p>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>

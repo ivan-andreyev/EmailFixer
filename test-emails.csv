@@ -1,0 +1,27 @@
+email,expected_status,notes
+john.doe@gmail.com,VALID,Standard Gmail address
+jane.smith@company.com,VALID,Corporate email
+user+tag@example.org,VALID,Email with plus sign
+test.123@subdomain.example.com,VALID,Subdomain address
+invalid.email@,INVALID,Missing domain
+user@domain,INVALID,Missing TLD
+@example.com,INVALID,Missing local part
+user name@example.com,INVALID,Space in local part
+test@temp-mail.com,DISPOSABLE,Temporary email service
+throwaway@mailinator.com,DISPOSABLE,Disposable email
+fake.user@10minutemail.com,DISPOSABLE,10minute mail service
+john@gmial.com,TYPO_SUGGESTION,Common typo (gmial vs gmail)
+test@yahooo.com,TYPO_SUGGESTION,Extra o in yahoo
+user@hotmial.com,TYPO_SUGGESTION,Common typo (hotmial vs hotmail)
+contact@microsoft.com,VALID,Large company domain
+developer@github.com,VALID,Tech company
+admin@localhost,INVALID,Localhost address
+user@192.168.1.1,INVALID,IP address format
+test..user@example.com,INVALID,Double dots
+.test@example.com,INVALID,Starts with dot
+test.@example.com,INVALID,Ends with dot
+very.long.email.address.with.many.dots@subdomain.example.co.uk,VALID,Long but valid
+a@b.co,VALID,Minimal valid
+test@example.co.uk,VALID,Multi-part TLD
+customer@ecommerce-store.com,VALID,Hyphen in domain
+support_team@example.com,VALID,Underscore in local part

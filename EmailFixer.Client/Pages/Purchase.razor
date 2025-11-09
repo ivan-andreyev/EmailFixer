@@ -6,99 +6,125 @@
 
 <PageTitle>Purchase Credits - Email Fixer</PageTitle>
 
-<div class="container mt-4">
+<div class="purchase-container mt-5 mb-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h3><i class="fas fa-shopping-cart"></i> Purchase Credits</h3>
-                </div>
-                <div class="card-body">
-                    @if (CurrentUser != null)
-                    {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            You currently have <strong>@CurrentUser.CreditsAvailable credits</strong> available.
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-6 fw-bold mb-3">
+                    <i class="fas fa-coins text-warning me-3"></i> Purchase Credits
+                </h1>
+                <p class="lead text-muted">Boost your email validation capacity with flexible credit packages</p>
+            </div>
+
+            <!-- Current Credits Info -->
+            @if (CurrentUser != null)
+            {
+                <div class="alert alert-info mb-5" style="max-width: 100%;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle me-3" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <strong>Current Balance:</strong> <span class="h5 mb-0">@CurrentUser.CreditsAvailable credits</span>
+                            <p class="text-muted mb-0 small">One credit = one email validation</p>
                         </div>
-                    }
+                    </div>
+                </div>
+            }
 
-                    <h5 class="mb-3">Choose a package:</h5>
-
-                    <div class="row">
-                        @foreach (var package in CreditPackages)
-                        {
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100 @(package.IsPopular ? "border-primary" : "")">
-                                    @if (package.IsPopular)
-                                    {
-                                        <div class="card-header bg-primary text-white text-center">
-                                            <strong>MOST POPULAR</strong>
-                                        </div>
-                                    }
-                                    <div class="card-body text-center">
-                                        <h4>@package.Credits Credits</h4>
-                                        <h2 class="text-success">${package.Price}</h2>
-                                        <p class="text-muted">
-                                            $@(package.Price / package.Credits) per credit
-                                        </p>
-                                        @if (package.Discount > 0)
-                                        {
-                                            <span class="badge bg-warning text-dark">
-                                                Save @package.Discount%
-                                            </span>
-                                        }
-                                        <button class="btn btn-primary w-100 mt-3"
-                                                @onclick="() => PurchaseCredits(package)"
-                                                disabled="@IsPurchasing">
-                                            @if (IsPurchasing)
-                                            {
-                                                <span class="spinner-border spinner-border-sm me-2"></span>
-                                            }
-                                            Purchase
-                                        </button>
+            <!-- Pricing Cards -->
+            <div class="pricing-cards mb-5">
+                <div class="row g-4">
+                    @foreach (var package in CreditPackages)
+                    {
+                        <div class="col-md-4">
+                            <div class="pricing-card @(package.IsPopular ? "pricing-card-featured" : "") h-100">
+                                @if (package.IsPopular)
+                                {
+                                    <div class="pricing-badge">
+                                        <i class="fas fa-star me-2"></i> MOST POPULAR
                                     </div>
+                                }
+                                <div class="pricing-content">
+                                    <h4 class="pricing-credits">@package.Credits</h4>
+                                    <p class="pricing-label">Credits</p>
+
+                                    <div class="pricing-price">
+                                        <span class="price-amount">${@package.Price.ToString("F2")}</span>
+                                    </div>
+
+                                    <p class="pricing-per-credit">
+                                        $@(package.Price / package.Credits).00 per credit
+                                    </p>
+
+                                    @if (package.Discount > 0)
+                                    {
+                                        <span class="discount-badge">
+                                            💰 Save @package.Discount%
+                                        </span>
+                                    }
+
+                                    <button class="btn btn-primary w-100 mt-4"
+                                            @onclick="() => PurchaseCredits(package)"
+                                            disabled="@IsPurchasing">
+                                        @if (IsPurchasing)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                            <span>Processing...</span>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-shopping-cart me-2"></i>
+                                            <span>Purchase</span>
+                                        }
+                                    </button>
                                 </div>
                             </div>
-                        }
-                    </div>
-
-                    <div class="mt-4">
-                        <h5>Purchase History</h5>
-                        @if (PurchaseHistory.Any())
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Credits</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var purchase in PurchaseHistory)
-                                        {
-                                            <tr>
-                                                <td>@purchase.PurchasedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                                <td>@purchase.Credits</td>
-                                                <td>$@purchase.Amount</td>
-                                                <td>
-                                                    <span class="badge bg-success">@purchase.Status</span>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <p class="text-muted">No purchase history yet.</p>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
             </div>
+
+            <!-- Purchase History -->
+            @if (PurchaseHistory.Any())
+            {
+                <div class="purchase-history">
+                    <h3 class="mb-4">
+                        <i class="fas fa-receipt me-2"></i> Purchase History
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Credits</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var purchase in PurchaseHistory)
+                                {
+                                    <tr>
+                                        <td>@purchase.PurchasedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td><strong>+@purchase.Credits</strong></td>
+                                        <td>$@purchase.Amount.ToString("F2")</td>
+                                        <td>
+                                            <span class="badge bg-success">@purchase.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-shopping-bag" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3">No purchase history yet.</p>
+                </div>
+            }
         </div>
     </div>
 </div>

@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @inject IUserService UserService
+@inject NavigationManager NavigationManager
 
 <div class="page">
     <!-- Top Navigation Bar -->
@@ -14,17 +15,17 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/">
+                        <a class="nav-link @IsActiveRoute("/")" href="/">
                             <i class="fas fa-home me-1"></i> Home
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/history">
+                        <a class="nav-link @IsActiveRoute("/history")" href="/history">
                             <i class="fas fa-history me-1"></i> History
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/purchase">
+                        <a class="nav-link @IsActiveRoute("/purchase")" href="/purchase">
                             <i class="fas fa-credit-card me-1"></i> Purchase Credits
                         </a>
                     </li>
@@ -64,5 +65,19 @@
     protected override async Task OnInitializedAsync()
     {
         CurrentUser = await UserService.GetCurrentUserAsync();
+    }
+
+    private string IsActiveRoute(string route)
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var path = uri.AbsolutePath;
+
+        if (route == "/" && path == "/")
+            return "active";
+
+        if (route != "/" && path.StartsWith(route))
+            return "active";
+
+        return string.Empty;
     }
 }

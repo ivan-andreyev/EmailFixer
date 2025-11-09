@@ -18,17 +18,19 @@ WORKDIR "/src/EmailFixer.Client"
 RUN dotnet publish "EmailFixer.Client.csproj" \
     -c Release \
     -o /app/publish \
-    /p:UseAppHost=false
+    /p:UseAppHost=false && \
+    # Verify wwwroot exists and has files
+    ls -la /app/publish/ && \
+    ls -la /app/publish/wwwroot/ || true
 
 # Runtime stage - nginx to serve static files
 FROM nginx:alpine AS runtime
-WORKDIR /usr/share/nginx/html
 
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Copy published Blazor WASM app
-COPY --from=build /app/publish/wwwroot .
+# Copy published Blazor WASM app to nginx html root
+COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf

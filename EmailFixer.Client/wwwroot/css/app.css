@@ -1,36 +1,73 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     height: 100%;
+    background: linear-gradient(135deg, #f5f7fa 0%, #f9fafb 100%);
 }
 
 .page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    background: #fff;
 }
 
 .main-content {
     flex: 1;
+    padding: 2rem 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #f9fafb 100%);
 }
 
 .content {
-    padding-top: 1.5rem;
+    padding: 0 1rem;
 }
 
 /* Navigation */
+.navbar {
+    padding: 1rem 0;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
 .navbar-brand {
-    font-weight: bold;
-    font-size: 1.5rem;
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+}
+
+.navbar-brand:hover {
+    opacity: 0.8;
+}
+
+.navbar-brand i {
+    color: #4a90e2;
 }
 
 .nav-link {
-    color: rgba(255, 255, 255, 0.75) !important;
-    transition: color 0.2s;
+    color: rgba(255, 255, 255, 0.7) !important;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    margin: 0 0.5rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 6px;
+    position: relative;
 }
 
-.nav-link:hover,
+.nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
 .nav-link.active {
     color: white !important;
+    background-color: rgba(74, 144, 226, 0.2);
+    border-bottom: 3px solid #4a90e2;
+}
+
+.nav-divider {
+    width: 1px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin: 0 1rem;
 }
 
 /* Cards */
@@ -95,6 +132,13 @@ html, body {
 /* Footer */
 .footer {
     margin-top: auto;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+    padding: 2rem 0;
+}
+
+.footer .text-muted {
+    font-size: 0.95rem;
 }
 
 /* Error UI */

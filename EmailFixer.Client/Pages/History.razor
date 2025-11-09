@@ -1,0 +1,235 @@
+@page "/history"
+@inject IEmailValidationService ValidationService
+@inject IUserService UserService
+@inject INotificationService NotificationService
+
+<PageTitle>Validation History - Email Fixer</PageTitle>
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h3><i class="fas fa-history"></i> Validation History</h3>
+        </div>
+        <div class="card-body">
+            @if (IsLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading history...</p>
+                </div>
+            }
+            else if (!HistoryRecords.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No validation history found.
+                    <a href="/" class="alert-link">Start validating emails</a>
+                </div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Filter by status:</label>
+                            <select class="form-select" @bind="FilterStatus" @bind:after="ApplyFilter">
+                                <option value="">All</option>
+                                <option value="Valid">Valid</option>
+                                <option value="Invalid">Invalid</option>
+                                <option value="Suspicious">Suspicious</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-danger w-100" @onclick="ClearHistory">
+                                <i class="fas fa-trash"></i> Clear All History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Message</th>
+                                <th>Suggestion</th>
+                                <th>MX Record</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var record in FilteredRecords)
+                            {
+                                <tr class="@GetRowClass(record.Status.ToString())">
+                                    <td>@record.CheckedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="font-monospace">@record.Email</td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(record.Status.ToString())">
+                                            @record.Status
+                                        </span>
+                                    </td>
+                                    <td>@record.Message</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(record.SuggestedEmail))
+                                        {
+                                            <span class="text-success">@record.SuggestedEmail</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (record.MxRecordExists)
+                                        {
+                                            <i class="fas fa-check text-success"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-times text-danger"></i>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (HasMoreRecords)
+                {
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-primary" @onclick="LoadMore" disabled="@IsLoadingMore">
+                            @if (IsLoadingMore)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Load More
+                        </button>
+                    </div>
+                }
+
+                <div class="mt-3">
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="text-success">@TotalValid</h5>
+                                    <small>Valid</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="text-danger">@TotalInvalid</h5>
+                                    <small>Invalid</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="text-warning">@TotalSuspicious</h5>
+                                    <small>Suspicious</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="text-primary">@TotalRecords</h5>
+                                    <small>Total Checked</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<EmailCheckModel> HistoryRecords = new();
+    private List<EmailCheckModel> FilteredRecords = new();
+    private bool IsLoading = true;
+    private bool IsLoadingMore = false;
+    private bool HasMoreRecords = true;
+    private int CurrentPage = 0;
+    private const int PageSize = 20;
+    private string FilterStatus = string.Empty;
+    private UserModel? CurrentUser = null;
+
+    private int TotalValid => HistoryRecords.Count(r => r.Status == EmailValidationStatus.Valid);
+    private int TotalInvalid => HistoryRecords.Count(r => r.Status == EmailValidationStatus.Invalid);
+    private int TotalSuspicious => HistoryRecords.Count(r => r.Status == EmailValidationStatus.Suspicious);
+    private int TotalRecords => HistoryRecords.Count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserService.GetCurrentUserAsync();
+        if (CurrentUser != null)
+        {
+            await LoadHistory();
+        }
+        IsLoading = false;
+    }
+
+    private async Task LoadHistory()
+    {
+        if (CurrentUser == null)
+        {
+            return;
+        }
+
+        var records = await ValidationService.GetUserHistoryAsync(CurrentUser.Id, CurrentPage * PageSize, PageSize);
+        HistoryRecords.AddRange(records);
+        HasMoreRecords = records.Count == PageSize;
+        ApplyFilter();
+    }
+
+    private async Task LoadMore()
+    {
+        IsLoadingMore = true;
+        CurrentPage++;
+        await LoadHistory();
+        IsLoadingMore = false;
+    }
+
+    private void ApplyFilter()
+    {
+        if (string.IsNullOrEmpty(FilterStatus))
+        {
+            FilteredRecords = HistoryRecords;
+        }
+        else
+        {
+            FilteredRecords = HistoryRecords
+                .Where(r => r.Status.ToString() == FilterStatus)
+                .ToList();
+        }
+    }
+
+    private void ClearHistory()
+    {
+        HistoryRecords.Clear();
+        FilteredRecords.Clear();
+        CurrentPage = 0;
+    }
+
+    private string GetRowClass(string status) => status switch
+    {
+        "Valid" => "table-success",
+        "Invalid" => "table-danger",
+        "Suspicious" => "table-warning",
+        _ => ""
+    };
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Valid" => "bg-success",
+        "Invalid" => "bg-danger",
+        "Suspicious" => "bg-warning",
+        _ => "bg-secondary"
+    };
+}

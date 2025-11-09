@@ -1,0 +1,95 @@
+# .gcloudignore - Exclude files from GCP deployment
+
+# .NET build artifacts
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+**/*.user
+**/*.suo
+**/*.cache
+**/*.dll
+**/*.pdb
+
+# Node modules
+**/node_modules/
+**/package-lock.json
+**/yarn.lock
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and plans
+docs/
+*.md
+!README.md
+
+# Test files
+**/*Tests/
+**/*.Tests/
+**/Tests/
+test/
+tests/
+
+# Local development files
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+.env
+.env.local
+*.log
+
+# Docker files (if deploying to Cloud Run, we use Dockerfile separately)
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Temporary files
+*.tmp
+*.temp
+nul
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Scripts
+*.ps1
+*.sh
+
+# Package files
+*.nupkg
+*.snupkg
+
+# User secrets
+**/secrets/
+**/*secrets*.json
+
+# Cloud ignore
+.gcloudignore
+
+# Blazor specific
+**/wwwroot/dist/
+**/wwwroot/css/
+**/wwwroot/*.css.map
+
+# Keep only production configuration
+!appsettings.json
+!appsettings.Production.json

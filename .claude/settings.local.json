@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker info:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(powershell.exe -Command \"Start-Process ''C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe''\")",
+      "Bash(powershell.exe -Command \"Start-Sleep -Seconds 30; docker info\")",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

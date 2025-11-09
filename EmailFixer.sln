@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Api", "EmailFixer.Api\EmailFixer.Api.csproj", "{3F1C353F-3652-44C4-A22B-FAC677F1E720}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Client", "EmailFixer.Client\EmailFixer.Client.csproj", "{48C739A3-64D8-4A54-8FF5-61CDCB2D2832}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Shared", "EmailFixer.Shared\EmailFixer.Shared.csproj", "{A2A0D6E4-16EC-473A-9B5C-0C28E8C325BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Core", "EmailFixer.Core\EmailFixer.Core.csproj", "{B22CD895-0105-4148-B882-79337E10BE95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Infrastructure", "EmailFixer.Infrastructure\EmailFixer.Infrastructure.csproj", "{32EF9C76-D128-4306-AFBE-63D4563E109A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3F1C353F-3652-44C4-A22B-FAC677F1E720}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F1C353F-3652-44C4-A22B-FAC677F1E720}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F1C353F-3652-44C4-A22B-FAC677F1E720}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F1C353F-3652-44C4-A22B-FAC677F1E720}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48C739A3-64D8-4A54-8FF5-61CDCB2D2832}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48C739A3-64D8-4A54-8FF5-61CDCB2D2832}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48C739A3-64D8-4A54-8FF5-61CDCB2D2832}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48C739A3-64D8-4A54-8FF5-61CDCB2D2832}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2A0D6E4-16EC-473A-9B5C-0C28E8C325BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2A0D6E4-16EC-473A-9B5C-0C28E8C325BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2A0D6E4-16EC-473A-9B5C-0C28E8C325BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2A0D6E4-16EC-473A-9B5C-0C28E8C325BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B22CD895-0105-4148-B882-79337E10BE95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B22CD895-0105-4148-B882-79337E10BE95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B22CD895-0105-4148-B882-79337E10BE95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B22CD895-0105-4148-B882-79337E10BE95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,63 @@
+# Build results
+bin/
+obj/
+out/
+*.dll
+*.exe
+*.pdb
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+*.vcxproj.filters
+.idea/
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# NuGet
+.nuget/
+*.nupkg
+*.snupkg
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+appsettings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# Misc
+.cursor/
+.git/
+*.bak
+*~
+.venv/
+nul

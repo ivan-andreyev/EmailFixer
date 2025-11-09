@@ -1,0 +1,74 @@
+# App Engine Configuration for Email Fixer API
+# NOTE: This project primarily uses Cloud Run, not App Engine
+# This file is provided as an alternative deployment option
+
+runtime: aspnetcore
+env: flex
+
+# Runtime configuration
+runtime_config:
+  operating_system: ubuntu22
+
+# Environment variables
+env_variables:
+  ASPNETCORE_ENVIRONMENT: 'Production'
+
+# Automatic scaling configuration
+automatic_scaling:
+  min_num_instances: 0
+  max_num_instances: 10
+  cool_down_period_sec: 120
+  cpu_utilization:
+    target_utilization: 0.6
+
+# Resources allocation
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10
+
+# Network configuration
+network:
+  forwarded_ports:
+    - 8080
+
+# Health check
+liveness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+readiness_check:
+  path: "/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  app_start_timeout_sec: 300
+
+# Beta settings for Cloud SQL
+beta_settings:
+  cloud_sql_instances: "emailfixer-prod:us-central1:emailfixer-db"
+
+# Handlers (not typically needed for ASP.NET Core, but can be used for static files)
+handlers:
+  - url: /.*
+    script: auto
+    secure: always
+    redirect_http_response_code: 301
+
+# Skip files (similar to .gcloudignore)
+skip_files:
+  - ^(.*/)?#.*#$
+  - ^(.*/)?.*~$
+  - ^(.*/)?.*\.py[co]$
+  - ^(.*/)?.*/RCS/.*$
+  - ^(.*/)?\..*$
+  - ^(.*/)?.*\.md$
+  - ^(.*/)?docs/.*$
+  - ^(.*/)?tests?/.*$
+
+# NOTE: For production use, prefer Cloud Run over App Engine
+# Cloud Run offers better pricing and auto-scaling for ASP.NET Core applications

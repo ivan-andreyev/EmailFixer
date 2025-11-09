@@ -1,0 +1,357 @@
+@page "/"
+@implements IDisposable
+@inject IEmailValidationService ValidationService
+@inject IUserService UserService
+@inject INotificationService NotificationService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Email Fixer - Validate Email Addresses</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-envelope-circle-check"></i> Email Validator</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Enter email addresses (one per line):</label>
+                        <textarea @bind="EmailInput" @oninput="OnEmailInputChanged"
+                                  class="form-control font-monospace"
+                                  rows="12"
+                                  placeholder="john@example.com&#10;jane@company.org&#10;info@website.net"
+                                  disabled="@IsValidating">
+                        </textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-info fs-6">
+                                <i class="fas fa-list"></i> @EmailCount emails
+                            </span>
+                            @if (CurrentUser != null)
+                            {
+                                <span class="badge bg-success fs-6 ms-2">
+                                    <i class="fas fa-coins"></i> @CurrentUser.CreditsAvailable credits
+                                </span>
+                            }
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary me-2" @onclick="ClearAll" disabled="@IsValidating">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                            <button class="btn btn-primary" @onclick="ValidateEmails"
+                                    disabled="@(IsValidating || EmailCount == 0 || !HasSufficientCredits)">
+                                @if (IsValidating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <span>Validating...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Validate</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (!HasSufficientCredits && EmailCount > 0)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            You need @EmailCount credits but only have @(CurrentUser?.CreditsAvailable ?? 0).
+                            <a href="/purchase" class="alert-link">Purchase more credits</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            @if (ValidationResults.Any())
+            {
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h4><i class="fas fa-clipboard-check"></i> Validation Results</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button class="btn btn-sm btn-outline-success me-2" @onclick="ExportValid">
+                                <i class="fas fa-download"></i> Export Valid
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger me-2" @onclick="ExportInvalid">
+                                <i class="fas fa-download"></i> Export Invalid
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="ExportAll">
+                                <i class="fas fa-file-csv"></i> Export All
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                        <th>Message</th>
+                                        <th>Suggestion</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var result in ValidationResults)
+                                    {
+                                        <tr class="@GetRowClass(result.Status.ToString())">
+                                            <td class="font-monospace">@result.Email</td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(result.Status.ToString())">
+                                                    @result.Status
+                                                </span>
+                                            </td>
+                                            <td>@result.Message</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(result.SuggestedEmail))
+                                                {
+                                                    <button class="btn btn-sm btn-link"
+                                                            @onclick="() => ShowSuggestion(result)">
+                                                        <i class="fas fa-lightbulb"></i> @result.SuggestedEmail
+                                                    </button>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        @onclick="() => CopyEmail(result.Email)">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3">
+                            <div class="row text-center">
+                                <div class="col">
+                                    <h5 class="text-success">@ValidCount Valid</h5>
+                                </div>
+                                <div class="col">
+                                    <h5 class="text-danger">@InvalidCount Invalid</h5>
+                                </div>
+                                <div class="col">
+                                    <h5 class="text-warning">@SuspiciousCount Suspicious</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (ShowSuggestionModal && SelectedResult != null)
+{
+    <SuggestionModal Result="@SelectedResult"
+                     OnAccept="AcceptSuggestion"
+                     OnReject="RejectSuggestion" />
+}
+
+@code {
+    private string EmailInput = string.Empty;
+    private List<EmailCheckModel> ValidationResults = new();
+    private bool IsValidating = false;
+    private UserModel? CurrentUser = null;
+    private EmailCheckModel? SelectedResult = null;
+    private bool ShowSuggestionModal = false;
+
+    private int EmailCount => EmailInput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        .Where(e => !string.IsNullOrWhiteSpace(e)).Count();
+
+    private bool HasSufficientCredits => CurrentUser?.CreditsAvailable >= EmailCount;
+
+    private int ValidCount => ValidationResults.Count(r => r.Status == EmailValidationStatus.Valid);
+    private int InvalidCount => ValidationResults.Count(r => r.Status == EmailValidationStatus.Invalid);
+    private int SuspiciousCount => ValidationResults.Count(r => r.Status == EmailValidationStatus.Suspicious);
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserService.GetCurrentUserAsync();
+        if (CurrentUser == null)
+        {
+            // Create guest user
+            CurrentUser = await UserService.CreateGuestUserAsync();
+        }
+    }
+
+    private void OnEmailInputChanged(ChangeEventArgs e)
+    {
+        EmailInput = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task ValidateEmails()
+    {
+        if (CurrentUser == null)
+        {
+            return;
+        }
+
+        IsValidating = true;
+        ValidationResults.Clear();
+
+        try
+        {
+            var emails = EmailInput
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct()
+                .ToList();
+
+            if (emails.Count == 1)
+            {
+                var result = await ValidationService.ValidateSingleAsync(emails[0], CurrentUser.Id);
+                if (result != null)
+                {
+                    ValidationResults.Add(result);
+                    // Refresh user to get updated credits
+                    CurrentUser = await UserService.GetUserByIdAsync(CurrentUser.Id);
+                }
+                else
+                {
+                    await NotificationService.ShowError("Validation failed. Please check your credits.");
+                }
+            }
+            else
+            {
+                var result = await ValidationService.ValidateBatchAsync(emails, CurrentUser.Id);
+                if (result != null)
+                {
+                    ValidationResults.AddRange(result.Results);
+                    // Refresh user to get updated credits
+                    CurrentUser = await UserService.GetUserByIdAsync(CurrentUser.Id);
+                }
+                else
+                {
+                    await NotificationService.ShowError("Batch validation failed. Please check your credits.");
+                }
+            }
+
+            if (ValidationResults.Any())
+            {
+                await NotificationService.ShowSuccess($"Validated {ValidationResults.Count} email(s)");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowError($"Error: {ex.Message}");
+        }
+        finally
+        {
+            IsValidating = false;
+        }
+    }
+
+    private void ClearAll()
+    {
+        EmailInput = string.Empty;
+        ValidationResults.Clear();
+    }
+
+    private async Task CopyEmail(string email)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", email);
+        await NotificationService.ShowSuccess($"Copied {email}");
+    }
+
+    private void ShowSuggestion(EmailCheckModel result)
+    {
+        SelectedResult = result;
+        ShowSuggestionModal = true;
+    }
+
+    private void AcceptSuggestion(string suggestion)
+    {
+        if (SelectedResult != null)
+        {
+            // Replace in input
+            EmailInput = EmailInput.Replace(SelectedResult.Email, suggestion);
+        }
+        ShowSuggestionModal = false;
+        SelectedResult = null;
+    }
+
+    private void RejectSuggestion()
+    {
+        ShowSuggestionModal = false;
+        SelectedResult = null;
+    }
+
+    private async Task ExportValid()
+    {
+        var validEmails = ValidationResults
+            .Where(r => r.Status == EmailValidationStatus.Valid)
+            .Select(r => r.Email);
+        await ExportToCSV(validEmails, "valid_emails.csv");
+    }
+
+    private async Task ExportInvalid()
+    {
+        var invalidEmails = ValidationResults
+            .Where(r => r.Status == EmailValidationStatus.Invalid)
+            .Select(r => r.Email);
+        await ExportToCSV(invalidEmails, "invalid_emails.csv");
+    }
+
+    private async Task ExportAll()
+    {
+        var csv = "Email,Status,Message,Suggestion\n";
+        foreach (var result in ValidationResults)
+        {
+            csv += $"{result.Email},{result.Status},{result.Message},{result.SuggestedEmail}\n";
+        }
+        await DownloadFile("all_results.csv", csv);
+    }
+
+    private async Task ExportToCSV(IEnumerable<string> emails, string filename)
+    {
+        var csv = string.Join("\n", emails);
+        await DownloadFile(filename, csv);
+    }
+
+    private async Task DownloadFile(string filename, string content)
+    {
+        await JSRuntime.InvokeVoidAsync("eval", $@"
+            const blob = new Blob(['{content}'], {{ type: 'text/csv' }});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '{filename}';
+            a.click();
+            URL.revokeObjectURL(url);
+        ");
+    }
+
+    private string GetRowClass(string status) => status switch
+    {
+        "Valid" => "table-success",
+        "Invalid" => "table-danger",
+        "Suspicious" => "table-warning",
+        _ => ""
+    };
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Valid" => "bg-success",
+        "Invalid" => "bg-danger",
+        "Suspicious" => "bg-warning",
+        _ => "bg-secondary"
+    };
+
+    public void Dispose()
+    {
+        // Cleanup if needed
+    }
+}

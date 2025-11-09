@@ -1,0 +1,81 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: emailfixer-postgres
+    environment:
+      - POSTGRES_DB=emailfixer
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - emailfixer-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: EmailFixer.Api/Dockerfile
+    container_name: emailfixer-api
+    ports:
+      - "5165:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=emailfixer;User Id=postgres;Password=postgres
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Paddle__ApiKey=${PADDLE_API_KEY:-test-key}
+      - Paddle__SellerId=${PADDLE_SELLER_ID:-test-id}
+      - Paddle__WebhookSecret=${PADDLE_WEBHOOK_SECRET:-test-secret}
+      - Jwt__SecretKey=${JWT_SECRET_KEY:-your-super-secret-key-change-in-production}
+      - Jwt__Issuer=EmailFixer.Api
+      - Jwt__Audience=EmailFixer.Client
+      - Jwt__ExpirationMinutes=60
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - emailfixer-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Blazor WebAssembly Client
+  client:
+    build:
+      context: .
+      dockerfile: EmailFixer.Client/Dockerfile
+    container_name: emailfixer-client
+    ports:
+      - "80:80"
+    environment:
+      - API_URL=http://api:8080
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - emailfixer-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  emailfixer-network:
+    driver: bridge

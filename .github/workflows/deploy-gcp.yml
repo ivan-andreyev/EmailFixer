@@ -1,0 +1,248 @@
+name: Deploy to Google Cloud Platform
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  PROJECT_ID: emailfixer-prod
+  REGION: us-central1
+  API_SERVICE: emailfixer-api
+  CLIENT_BUCKET: emailfixer-client
+  CLOUDSQL_INSTANCE: emailfixer-db
+
+jobs:
+  # Job 1: Run tests
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore EmailFixer.sln
+
+      - name: Build solution
+        run: dotnet build EmailFixer.sln --configuration Release --no-restore
+
+      - name: Run unit tests
+        run: dotnet test EmailFixer.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/test-results.trx'
+
+  # Job 2: Build and deploy API to Cloud Run
+  deploy-api:
+    name: Deploy API to Cloud Run
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      api-url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }} \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:latest \
+            -f EmailFixer.Api/Dockerfile \
+            .
+
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }}
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:latest
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          gcloud run deploy ${{ env.API_SERVICE }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.CLOUDSQL_INSTANCE }} \
+            --set-env-vars "ASPNETCORE_ENVIRONMENT=Production" \
+            --set-secrets "ConnectionStrings__DefaultConnection=db-connection:latest" \
+            --set-secrets "Paddle__ApiKey=paddle-api-key:latest" \
+            --set-secrets "Paddle__VendorId=paddle-vendor-id:latest" \
+            --set-secrets "Paddle__WebhookSecret=paddle-webhook-secret:latest" \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 60s \
+            --max-instances 10 \
+            --min-instances 0 \
+            --quiet
+
+          # Get the service URL
+          API_URL=$(gcloud run services describe ${{ env.API_SERVICE }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "url=$API_URL" >> $GITHUB_OUTPUT
+          echo "Deployed API at: $API_URL"
+
+      - name: Test API health endpoint
+        run: |
+          sleep 10
+          curl -f ${{ steps.deploy.outputs.url }}/health || exit 1
+
+  # Job 3: Build and deploy Blazor client to Cloud Storage
+  deploy-client:
+    name: Deploy Client to Cloud Storage
+    needs: deploy-api
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Build Blazor WebAssembly Client
+        run: |
+          dotnet publish EmailFixer.Client \
+            -c Release \
+            -o ./publish \
+            /p:ApiBaseUrl=${{ needs.deploy-api.outputs.api-url }}
+
+      - name: Deploy to Cloud Storage
+        run: |
+          gsutil -m rsync -r -d ./publish/wwwroot gs://${{ env.CLIENT_BUCKET }}
+          echo "Client deployed to: https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html"
+
+      - name: Set cache control headers
+        run: |
+          # Cache static assets for 1 year
+          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.js" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.css" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.wasm" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.woff*" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.ttf" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.png" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.jpg" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.svg" || true
+
+          # No cache for HTML files
+          gsutil -m setmeta -h "Cache-Control:no-cache, no-store, must-revalidate" \
+            "gs://${{ env.CLIENT_BUCKET }}/**/*.html" || true
+
+  # Job 4: Invalidate CDN cache (optional)
+  invalidate-cdn:
+    name: Invalidate CDN Cache
+    needs: [deploy-api, deploy-client]
+    runs-on: ubuntu-latest
+    if: vars.CDN_URL_MAP != ''
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Invalidate CDN cache
+        run: |
+          gcloud compute url-maps invalidate-cdn-cache ${{ vars.CDN_URL_MAP }} \
+            --path "/*" \
+            --async
+
+  # Job 5: Post-deployment validation
+  validate:
+    name: Post-Deployment Validation
+    needs: [deploy-api, deploy-client]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test API endpoints
+        run: |
+          echo "Testing API at: ${{ needs.deploy-api.outputs.api-url }}"
+
+          # Test health endpoint
+          curl -f ${{ needs.deploy-api.outputs.api-url }}/health || exit 1
+
+          # Test swagger endpoint
+          curl -f ${{ needs.deploy-api.outputs.api-url }}/swagger/index.html || true
+
+      - name: Test client deployment
+        run: |
+          echo "Testing client at: https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html"
+          curl -f -I https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html || exit 1
+
+  # Job 6: Notify on completion
+  notify:
+    name: Notify Deployment Status
+    needs: [deploy-api, deploy-client, validate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Deployment Success
+        if: ${{ needs.deploy-api.result == 'success' && needs.deploy-client.result == 'success' && needs.validate.result == 'success' }}
+        run: |
+          echo "✅ Deployment successful!"
+          echo "API URL: ${{ needs.deploy-api.outputs.api-url }}"
+          echo "Client URL: https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html"
+
+      - name: Deployment Failure
+        if: ${{ needs.deploy-api.result == 'failure' || needs.deploy-client.result == 'failure' || needs.validate.result == 'failure' }}
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Check the logs above for details"
+          exit 1

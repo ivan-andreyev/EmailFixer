@@ -1,0 +1,68 @@
+@if (IsVisible && Result != null)
+{
+    <div class="modal fade show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="fas fa-lightbulb"></i> Email Suggestion
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="Reject"></button>
+                </div>
+                <div class="modal-body">
+                    <p>We found a potential typo in the email address:</p>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Original:</label>
+                        <div class="alert alert-light font-monospace">
+                            @Result.Email
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-success">Suggested:</label>
+                        <div class="alert alert-success font-monospace">
+                            @Result.SuggestedEmail
+                        </div>
+                    </div>
+
+                    <p class="text-muted small">
+                        Did you mean to type this email address instead?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Reject">
+                        <i class="fas fa-times"></i> Keep Original
+                    </button>
+                    <button type="button" class="btn btn-success" @onclick="Accept">
+                        <i class="fas fa-check"></i> Accept Suggestion
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public EmailCheckModel? Result { get; set; }
+    [Parameter] public EventCallback<string> OnAccept { get; set; }
+    [Parameter] public EventCallback OnReject { get; set; }
+
+    private bool IsVisible = true;
+
+    private async Task Accept()
+    {
+        if (Result?.SuggestedEmail != null)
+        {
+            IsVisible = false;
+            await OnAccept.InvokeAsync(Result.SuggestedEmail);
+        }
+    }
+
+    private async Task Reject()
+    {
+        IsVisible = false;
+        await OnReject.InvokeAsync();
+    }
+}

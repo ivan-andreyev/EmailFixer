@@ -1,0 +1,26 @@
+[
+  {
+    "origin": [
+      "https://storage.googleapis.com",
+      "https://emailfixer.com",
+      "https://www.emailfixer.com"
+    ],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS",
+      "PATCH"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Content-Length",
+      "X-Total-Count"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

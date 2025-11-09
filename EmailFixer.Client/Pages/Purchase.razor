@@ -1,0 +1,169 @@
+@page "/purchase"
+@inject IPaymentService PaymentService
+@inject IUserService UserService
+@inject INotificationService NotificationService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Purchase Credits - Email Fixer</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3><i class="fas fa-shopping-cart"></i> Purchase Credits</h3>
+                </div>
+                <div class="card-body">
+                    @if (CurrentUser != null)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            You currently have <strong>@CurrentUser.CreditsAvailable credits</strong> available.
+                        </div>
+                    }
+
+                    <h5 class="mb-3">Choose a package:</h5>
+
+                    <div class="row">
+                        @foreach (var package in CreditPackages)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 @(package.IsPopular ? "border-primary" : "")">
+                                    @if (package.IsPopular)
+                                    {
+                                        <div class="card-header bg-primary text-white text-center">
+                                            <strong>MOST POPULAR</strong>
+                                        </div>
+                                    }
+                                    <div class="card-body text-center">
+                                        <h4>@package.Credits Credits</h4>
+                                        <h2 class="text-success">${package.Price}</h2>
+                                        <p class="text-muted">
+                                            $@(package.Price / package.Credits) per credit
+                                        </p>
+                                        @if (package.Discount > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                Save @package.Discount%
+                                            </span>
+                                        }
+                                        <button class="btn btn-primary w-100 mt-3"
+                                                @onclick="() => PurchaseCredits(package)"
+                                                disabled="@IsPurchasing">
+                                            @if (IsPurchasing)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                            }
+                                            Purchase
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-4">
+                        <h5>Purchase History</h5>
+                        @if (PurchaseHistory.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Credits</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var purchase in PurchaseHistory)
+                                        {
+                                            <tr>
+                                                <td>@purchase.PurchasedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                                <td>@purchase.Credits</td>
+                                                <td>$@purchase.Amount</td>
+                                                <td>
+                                                    <span class="badge bg-success">@purchase.Status</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No purchase history yet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UserModel? CurrentUser;
+    private bool IsPurchasing = false;
+    private List<Services.PurchaseHistory> PurchaseHistory = new();
+
+    private List<CreditPackage> CreditPackages = new()
+    {
+        new CreditPackage { Credits = 100, Price = 5.00m, Discount = 0, IsPopular = false },
+        new CreditPackage { Credits = 500, Price = 20.00m, Discount = 20, IsPopular = true },
+        new CreditPackage { Credits = 1000, Price = 35.00m, Discount = 30, IsPopular = false },
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserService.GetCurrentUserAsync();
+        if (CurrentUser != null)
+        {
+            PurchaseHistory = await PaymentService.GetPurchaseHistoryAsync(CurrentUser.Id);
+        }
+    }
+
+    private async Task PurchaseCredits(CreditPackage package)
+    {
+        if (CurrentUser == null)
+        {
+            await NotificationService.ShowError("Please create an account first");
+            return;
+        }
+
+        IsPurchasing = true;
+
+        try
+        {
+            var checkoutUrl = await PaymentService.CreateCheckoutSessionAsync(CurrentUser.Id, package.Credits);
+
+            if (!string.IsNullOrEmpty(checkoutUrl))
+            {
+                // Open Paddle checkout
+                await JSRuntime.InvokeVoidAsync("open", checkoutUrl, "_blank");
+                await NotificationService.ShowSuccess("Opening checkout...");
+            }
+            else
+            {
+                await NotificationService.ShowError("Failed to create checkout session");
+            }
+        }
+        catch (Exception ex)
+        {
+            await NotificationService.ShowError($"Error: {ex.Message}");
+        }
+        finally
+        {
+            IsPurchasing = false;
+        }
+    }
+
+    private class CreditPackage
+    {
+        public int Credits { get; set; }
+        public decimal Price { get; set; }
+        public int Discount { get; set; }
+        public bool IsPopular { get; set; }
+    }
+}

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Core", "EmailFix
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Infrastructure", "EmailFixer.Infrastructure\EmailFixer.Infrastructure.csproj", "{32EF9C76-D128-4306-AFBE-63D4563E109A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailFixer.Tests", "EmailFixer.Tests\EmailFixer.Tests.csproj", "{80AD4E08-2774-4FB9-8D28-98FFAFF52E0D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32EF9C76-D128-4306-AFBE-63D4563E109A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80AD4E08-2774-4FB9-8D28-98FFAFF52E0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80AD4E08-2774-4FB9-8D28-98FFAFF52E0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80AD4E08-2774-4FB9-8D28-98FFAFF52E0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80AD4E08-2774-4FB9-8D28-98FFAFF52E0D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

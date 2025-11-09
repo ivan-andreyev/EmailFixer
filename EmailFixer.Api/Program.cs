@@ -134,3 +134,8 @@ if (args.Contains("--seed-database"))
 }
 
 app.Run();
+
+/// <summary>
+/// Partial Program class untuk testing dengan WebApplicationFactory
+/// </summary>
+public partial class Program { }

@@ -35,6 +35,7 @@ yarn-error.log
 .env.local
 .env.*.local
 appsettings.local.json
+sa-key.json
 
 # OS
 .DS_Store

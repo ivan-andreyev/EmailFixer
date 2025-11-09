@@ -55,7 +55,8 @@
       "Bash(gsutil -m setmeta:*)",
       "Bash(dotnet test:*)",
       "Bash(gcloud run services logs read:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

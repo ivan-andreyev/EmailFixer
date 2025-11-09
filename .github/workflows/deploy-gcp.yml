@@ -20,8 +20,8 @@ env:
   PROJECT_ID: emailfixer-prod
   REGION: us-central1
   API_SERVICE: emailfixer-api
-  CLIENT_BUCKET: emailfixer-client
-  CLOUDSQL_INSTANCE: emailfixer-db
+  CLIENT_SERVICE: emailfixer-client
+  CLOUDSQL_INSTANCE: emailfixer-postgres
 
 jobs:
   # Job 1: Run tests
@@ -125,20 +125,17 @@ jobs:
           sleep 10
           curl -f ${{ steps.deploy.outputs.url }}/health || exit 1
 
-  # Job 3: Build and deploy Blazor client to Cloud Storage
+  # Job 3: Build and deploy Blazor client to Cloud Run
   deploy-client:
-    name: Deploy Client to Cloud Storage
+    name: Deploy Client to Cloud Run
     needs: deploy-api
     runs-on: ubuntu-latest
+    outputs:
+      client-url: ${{ steps.deploy.outputs.url }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -150,34 +147,43 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
-      - name: Build Blazor WebAssembly Client
-        run: |
-          dotnet publish EmailFixer.Client \
-            -c Release \
-            -o ./publish \
-            /p:ApiBaseUrl=${{ needs.deploy-api.outputs.api-url }}
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
 
-      - name: Deploy to Cloud Storage
+      - name: Build Docker image for client
         run: |
-          gsutil -m rsync -r -d ./publish/wwwroot gs://${{ env.CLIENT_BUCKET }}
-          echo "Client deployed to: https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html"
+          docker build \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:${{ github.sha }} \
+            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:latest \
+            -f EmailFixer.Client/Dockerfile \
+            .
 
-      - name: Set cache control headers
+      - name: Push Docker image to GCR
         run: |
-          # Cache static assets for 1 year
-          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.js" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.css" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.wasm" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.woff*" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.ttf" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.png" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.jpg" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.svg" || true
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:${{ github.sha }}
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:latest
 
-          # No cache for HTML files
-          gsutil -m setmeta -h "Cache-Control:no-cache, no-store, must-revalidate" \
-            "gs://${{ env.CLIENT_BUCKET }}/**/*.html" || true
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          gcloud run deploy ${{ env.CLIENT_SERVICE }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --memory 256Mi \
+            --cpu 0.5 \
+            --timeout 30s \
+            --max-instances 10 \
+            --min-instances 0 \
+            --quiet
+
+          # Get the service URL
+          CLIENT_URL=$(gcloud run services describe ${{ env.CLIENT_SERVICE }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "url=$CLIENT_URL" >> $GITHUB_OUTPUT
+          echo "Deployed Client at: $CLIENT_URL"
 
   # Job 4: Invalidate CDN cache (optional)
   invalidate-cdn:
@@ -222,8 +228,8 @@ jobs:
 
       - name: Test client deployment
         run: |
-          echo "Testing client at: https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html"
-          curl -f -I https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html || exit 1
+          echo "Testing client at: ${{ needs.deploy-client.outputs.client-url }}"
+          curl -f ${{ needs.deploy-client.outputs.client-url }} | grep -q "<!DOCTYPE html>" || exit 1
 
   # Job 6: Notify on completion
   notify:
@@ -238,7 +244,12 @@ jobs:
         run: |
           echo "✅ Deployment successful!"
           echo "API URL: ${{ needs.deploy-api.outputs.api-url }}"
-          echo "Client URL: https://storage.googleapis.com/${{ env.CLIENT_BUCKET }}/index.html"
+          echo "Client URL: ${{ needs.deploy-client.outputs.client-url }}"
+          echo ""
+          echo "API Endpoints:"
+          echo "  Health: ${{ needs.deploy-api.outputs.api-url }}/health"
+          echo "  Swagger: ${{ needs.deploy-api.outputs.api-url }}/swagger"
+          echo "  Validate: ${{ needs.deploy-api.outputs.api-url }}/api/email/validate"
 
       - name: Deployment Failure
         if: ${{ needs.deploy-api.result == 'failure' || needs.deploy-client.result == 'failure' || needs.validate.result == 'failure' }}

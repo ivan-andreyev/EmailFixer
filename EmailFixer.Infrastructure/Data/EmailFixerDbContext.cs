@@ -32,17 +32,39 @@ public class EmailFixerDbContext : DbContext
             entity.Property(e => e.DisplayName)
                 .HasMaxLength(255);
 
-            entity.HasIndex(e => e.Email)
-                .IsUnique();
+            // OAuth configuration
+            entity.Property(e => e.GoogleId)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.AuthProvider)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("google");
+
+            // Composite unique index for email + provider
+            entity.HasIndex(e => new { e.Email, e.AuthProvider })
+                .IsUnique()
+                .HasName("IX_User_Email_AuthProvider");
+
+            // Unique index for GoogleId when not null
+            entity.HasIndex(e => e.GoogleId)
+                .IsUnique()
+                .HasName("IX_User_GoogleId");
 
             entity.HasIndex(e => e.StripeCustomerId)
                 .IsUnique();
+
+            // Account status
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.LastLoginAt);
         });
 
         // EmailCheck configuration

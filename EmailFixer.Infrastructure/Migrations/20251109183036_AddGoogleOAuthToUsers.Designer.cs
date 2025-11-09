@@ -3,6 +3,7 @@ using System;
 using EmailFixer.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EmailFixer.Infrastructure.Migrations
 {
     [DbContext(typeof(EmailFixerDbContext))]
-    partial class EmailFixerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251109183036_AddGoogleOAuthToUsers")]
+    partial class AddGoogleOAuthToUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");

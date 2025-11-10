@@ -1,0 +1,6 @@
+{
+  "EmailFixer.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "~",
+  "EmailFixer.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "~",
+  "EmailFixer.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "~",
+  "EmailFixer.Shared, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "~"
+}

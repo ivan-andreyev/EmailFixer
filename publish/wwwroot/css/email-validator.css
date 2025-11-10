@@ -1,0 +1,375 @@
+/* Email Validator Container */
+.email-validator-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #0d6efd;
+}
+
+/* Table styling */
+.table-success {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+
+.table-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.font-monospace {
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+}
+
+/* Card styling */
+.card {
+    border-radius: 12px;
+    border: none;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.card-header {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    padding: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.card-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* Form styling */
+.form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.6rem;
+}
+
+.form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.form-control:disabled {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+textarea.form-control {
+    min-height: 300px;
+    resize: vertical;
+}
+
+/* Button styling */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5c636a 100%);
+    border: none;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Badge styling */
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    border-radius: 6px;
+}
+
+/* Table styling */
+.table {
+    font-size: 0.95rem;
+}
+
+.table thead {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Summary stats */
+.text-success,
+.text-danger,
+.text-warning {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Textarea specific */
+textarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+textarea::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .row.g-4 > div {
+        margin-bottom: 1.5rem;
+    }
+
+    textarea.form-control {
+        min-height: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .email-validator-container {
+        padding: 0 10px;
+    }
+
+    .card {
+        margin-bottom: 20px;
+    }
+
+    .table {
+        font-size: 0.85rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+    }
+
+    textarea.form-control {
+        min-height: 200px;
+    }
+
+    .card-header h5 {
+        font-size: 1rem;
+    }
+}
+
+/* Animation for validation spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+/* Purchase Page Styling */
+.purchase-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.pricing-cards {
+    margin: 2rem 0;
+}
+
+.pricing-card {
+    background: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.pricing-card:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 8px 24px rgba(13, 110, 253, 0.15);
+    transform: translateY(-4px);
+}
+
+.pricing-card-featured {
+    border-color: #0d6efd;
+    box-shadow: 0 12px 32px rgba(13, 110, 253, 0.2);
+    background: linear-gradient(135deg, #f8faff 0%, #fff 100%);
+}
+
+.pricing-card-featured:hover {
+    box-shadow: 0 16px 40px rgba(13, 110, 253, 0.3);
+    transform: translateY(-8px);
+}
+
+.pricing-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    padding: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.pricing-content {
+    margin-top: 2rem;
+}
+
+.pricing-credits {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0d6efd;
+    margin: 0;
+    line-height: 1;
+}
+
+.pricing-label {
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.pricing-price {
+    margin: 1.5rem 0;
+}
+
+.price-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #198754;
+}
+
+.pricing-per-credit {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 1rem 0;
+}
+
+.discount-badge {
+    display: inline-block;
+    background: #ffc107;
+    color: #333;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 1rem 0;
+}
+
+.purchase-history {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e9ecef;
+}
+
+.purchase-history h3 {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.purchase-history table {
+    font-size: 0.95rem;
+}
+
+.purchase-history thead {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.purchase-history tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.purchase-history tbody tr:hover {
+    background-color: #f8f9fa;
+}

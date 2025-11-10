@@ -1,0 +1,477 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>EmailFixer.Api</name>
+    </assembly>
+    <members>
+        <member name="T:EmailFixer.Api.Controllers.AuthController">
+            <summary>
+            Authentication controller for Google OAuth and JWT token handling
+            </summary>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.AuthController.GoogleCallback(EmailFixer.Api.Controllers.GoogleCallbackRequest)">
+            <summary>
+            Exchanges Google authorization code for JWT token
+            </summary>
+            <param name="request">Code and code_verifier from frontend</param>
+            <returns>JWT token and user info</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.AuthController.GetCurrentUser">
+            <summary>
+            Returns current authenticated user info
+            </summary>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.AuthController.Logout">
+            <summary>
+            Logout endpoint (frontend clears token)
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Controllers.GoogleCallbackRequest">
+            <summary>
+            Request model for Google OAuth callback
+            </summary>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.EmailValidationController.ValidateSingle(EmailFixer.Api.Models.EmailValidationRequest)">
+            <summary>
+            Validates a single email address
+            </summary>
+            <param name="request">Email validation request</param>
+            <returns>Validation result with remaining credits</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.EmailValidationController.ValidateBatch(EmailFixer.Api.Models.BatchEmailValidationRequest)">
+            <summary>
+            Validates multiple email addresses in batch
+            </summary>
+            <param name="request">Batch validation request</param>
+            <returns>Batch validation results with remaining credits</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.PaymentController.CreateCheckout(EmailFixer.Api.Models.CreateCheckoutRequest)">
+            <summary>
+            Create a Paddle checkout for purchasing email credits
+            </summary>
+            <param name="request">Checkout creation request</param>
+            <returns>Checkout URL and details</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.PaymentController.HandleWebhook">
+            <summary>
+            Handle Paddle webhook for transaction events
+            </summary>
+            <returns>Webhook processing result</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.PaymentController.GetTransactions(System.Guid)">
+            <summary>
+            Get transaction history for a user
+            </summary>
+            <param name="userId">User ID</param>
+            <returns>List of transactions</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.UserController.GetUser(System.Guid)">
+            <summary>
+            Get user by ID
+            </summary>
+            <param name="id">User ID</param>
+            <returns>User details</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.UserController.CreateUser(EmailFixer.Api.Models.CreateUserRequest)">
+            <summary>
+            Create a new user
+            </summary>
+            <param name="request">User creation request</param>
+            <returns>Created user details</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.UserController.GetCredits(System.Guid)">
+            <summary>
+            Get user credit balance
+            </summary>
+            <param name="id">User ID</param>
+            <returns>Credit balance</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.UserController.UpdateCredits(System.Guid,EmailFixer.Api.Models.UpdateCreditsRequest)">
+            <summary>
+            Update user credit balance
+            </summary>
+            <param name="id">User ID</param>
+            <param name="request">Update credits request</param>
+            <returns>Updated credit balance</returns>
+        </member>
+        <member name="M:EmailFixer.Api.Controllers.UserController.GetHistory(System.Guid,System.Int32,System.Int32)">
+            <summary>
+            Get user's email validation history
+            </summary>
+            <param name="id">User ID</param>
+            <param name="page">Page number (default: 1)</param>
+            <param name="pageSize">Page size (default: 50, max: 100)</param>
+            <returns>Paginated history of email validations</returns>
+        </member>
+        <member name="T:EmailFixer.Api.Middleware.GlobalExceptionMiddleware">
+            <summary>
+            Global exception handling middleware
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Middleware.GlobalExceptionMiddlewareExtensions">
+            <summary>
+            Extension method for registering the middleware
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.EmailValidationRequest">
+            <summary>
+            Request model for single email validation
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationRequest.UserId">
+            <summary>
+            User ID making the request
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationRequest.Email">
+            <summary>
+            Email address to validate
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.BatchEmailValidationRequest">
+            <summary>
+            Request model for batch email validation
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.BatchEmailValidationRequest.UserId">
+            <summary>
+            User ID making the request
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.BatchEmailValidationRequest.Emails">
+            <summary>
+            List of email addresses to validate (max 100)
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.EmailValidationResponse">
+            <summary>
+            Response model for single email validation
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResponse.Email">
+            <summary>
+            Email address that was validated
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResponse.IsValid">
+            <summary>
+            Whether the email is valid
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResponse.Status">
+            <summary>
+            Validation status
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResponse.Suggestion">
+            <summary>
+            Suggested correction (if typo detected)
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResponse.RemainingCredits">
+            <summary>
+            Remaining credits after this check
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResponse.ValidationErrors">
+            <summary>
+            Validation errors if any
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.BatchEmailValidationResponse">
+            <summary>
+            Response model for batch email validation
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.BatchEmailValidationResponse.Results">
+            <summary>
+            Validation results for each email
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.BatchEmailValidationResponse.TotalProcessed">
+            <summary>
+            Total number of emails processed
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.BatchEmailValidationResponse.CreditsUsed">
+            <summary>
+            Total credits used
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.BatchEmailValidationResponse.RemainingCredits">
+            <summary>
+            Remaining credits after batch processing
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.EmailValidationResult">
+            <summary>
+            Individual email validation result in batch
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResult.Email">
+            <summary>
+            Email address
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResult.IsValid">
+            <summary>
+            Whether the email is valid
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResult.Status">
+            <summary>
+            Validation status
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResult.Suggestion">
+            <summary>
+            Suggested correction
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailValidationResult.ValidationErrors">
+            <summary>
+            Validation errors
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.ErrorResponse">
+            <summary>
+            Generic error response
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.ErrorResponse.Message">
+            <summary>
+            Error message
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.ErrorResponse.Details">
+            <summary>
+            Additional error details
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.ErrorResponse.TraceId">
+            <summary>
+            Trace ID for debugging
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.CreateCheckoutRequest">
+            <summary>
+            Request for creating a Paddle checkout
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateCheckoutRequest.UserId">
+            <summary>
+            User ID purchasing credits
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateCheckoutRequest.EmailsCount">
+            <summary>
+            Number of email credits to purchase
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.CreateCheckoutResponse">
+            <summary>
+            Response for checkout creation
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateCheckoutResponse.CheckoutUrl">
+            <summary>
+            Paddle checkout URL
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateCheckoutResponse.TransactionId">
+            <summary>
+            Transaction ID
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateCheckoutResponse.Amount">
+            <summary>
+            Payment amount
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateCheckoutResponse.CreditsCount">
+            <summary>
+            Number of credits
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.WebhookProcessedResponse">
+            <summary>
+            Webhook processing result response
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.WebhookProcessedResponse.Success">
+            <summary>
+            Whether webhook was processed successfully
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.WebhookProcessedResponse.TransactionId">
+            <summary>
+            Transaction ID
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.WebhookProcessedResponse.UserId">
+            <summary>
+            User ID who received credits
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.WebhookProcessedResponse.CreditsAdded">
+            <summary>
+            Credits added
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.WebhookProcessedResponse.ErrorMessage">
+            <summary>
+            Error message if failed
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.UserDto">
+            <summary>
+            User data transfer object
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserDto.Id">
+            <summary>
+            User ID
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserDto.Email">
+            <summary>
+            User email address
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserDto.Credits">
+            <summary>
+            Available credits
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserDto.CreatedAt">
+            <summary>
+            Account creation date
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserDto.UpdatedAt">
+            <summary>
+            Last update date
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.CreateUserRequest">
+            <summary>
+            Request model for creating a new user
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.CreateUserRequest.Email">
+            <summary>
+            User email address
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.UpdateCreditsRequest">
+            <summary>
+            Request model for updating user credits
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UpdateCreditsRequest.Credits">
+            <summary>
+            New credit balance
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.EmailCheckDto">
+            <summary>
+            Email check history item DTO
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.Id">
+            <summary>
+            Check ID
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.Email">
+            <summary>
+            Email that was checked
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.IsValid">
+            <summary>
+            Whether email is valid
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.Suggestion">
+            <summary>
+            Suggested correction
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.CheckedAt">
+            <summary>
+            When the check was performed
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.CreditsUsed">
+            <summary>
+            Credits used for this check
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.EmailCheckDto.BatchId">
+            <summary>
+            Batch ID if part of batch check
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Models.UserHistoryResponse">
+            <summary>
+            User history response with pagination
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserHistoryResponse.Items">
+            <summary>
+            History items
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserHistoryResponse.Page">
+            <summary>
+            Current page number
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserHistoryResponse.PageSize">
+            <summary>
+            Page size
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserHistoryResponse.TotalItems">
+            <summary>
+            Total number of items
+            </summary>
+        </member>
+        <member name="P:EmailFixer.Api.Models.UserHistoryResponse.TotalPages">
+            <summary>
+            Total number of pages
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Validators.EmailValidationRequestValidator">
+            <summary>
+            Validator for EmailValidationRequest
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Validators.BatchEmailValidationRequestValidator">
+            <summary>
+            Validator for BatchEmailValidationRequest
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Validators.CreateCheckoutRequestValidator">
+            <summary>
+            Validator for CreateCheckoutRequest
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Validators.CreateUserRequestValidator">
+            <summary>
+            Validator for CreateUserRequest
+            </summary>
+        </member>
+        <member name="T:EmailFixer.Api.Validators.UpdateCreditsRequestValidator">
+            <summary>
+            Validator for UpdateCreditsRequest
+            </summary>
+        </member>
+        <member name="T:Program">
+            <summary>
+            Partial Program class untuk testing dengan WebApplicationFactory
+            </summary>
+        </member>
+    </members>
+</doc>

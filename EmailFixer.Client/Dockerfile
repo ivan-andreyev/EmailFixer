@@ -15,6 +15,9 @@ COPY . .
 
 # Build and publish Blazor WebAssembly application
 WORKDIR "/src/EmailFixer.Client"
+# Clean any old bin/obj directories to force fresh build
+RUN rm -rf bin obj
+
 RUN dotnet publish "EmailFixer.Client.csproj" \
     -c Release \
     -o /app/publish \

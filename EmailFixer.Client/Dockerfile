@@ -15,16 +15,21 @@ COPY . .
 
 # Build and publish Blazor WebAssembly application
 WORKDIR "/src/EmailFixer.Client"
-# Clean any old bin/obj directories to force fresh build
-RUN rm -rf bin obj
+
+# AGGRESSIVE CLEAN: Remove ALL build artifacts and NuGet packages
+# This forces completely fresh build of all framework files
+RUN rm -rf bin obj .vs .vscode /app/publish
+RUN find /src -type d -name "bin" -o -name "obj" | xargs rm -rf
 
 RUN dotnet publish "EmailFixer.Client.csproj" \
     -c Release \
     -o /app/publish \
-    /p:UseAppHost=false && \
+    /p:UseAppHost=false \
+    /p:PublishTrimmed=false \
+    /p:PublishReadyToRun=false && \
     # Verify wwwroot exists and has files
     ls -la /app/publish/ && \
-    ls -la /app/publish/wwwroot/ || true
+    ls -la /app/publish/wwwroot/_framework/ | head -20 || true
 
 # Runtime stage - nginx to serve static files
 FROM nginx:alpine AS runtime

@@ -56,12 +56,12 @@ steps:
       - |
         echo "Waiting for API to be ready..."
         sleep 10
-        API_URL=$(gcloud run services describe emailfixer-api \
+        API_URL=$$(gcloud run services describe emailfixer-api \
           --region us-central1 \
           --format 'value(status.url)')
-        echo "API URL: $API_URL"
+        echo "API URL: $$API_URL"
         echo "Testing API health endpoint..."
-        curl -f "$API_URL/health" || exit 1
+        curl -f "$$API_URL/health" || exit 1
     id: 'test-api'
     waitFor: ['deploy-api']
 
@@ -114,15 +114,15 @@ steps:
       - '-c'
       - |
         echo "Testing Client deployment..."
-        CLIENT_URL=$(gcloud run services describe emailfixer-client \
+        CLIENT_URL=$$(gcloud run services describe emailfixer-client \
           --region us-central1 \
           --format 'value(status.url)')
-        echo "Client URL: $CLIENT_URL"
+        echo "Client URL: $$CLIENT_URL"
         echo "Testing client loads HTML..."
-        curl -f "$CLIENT_URL" | grep -q "<!DOCTYPE html>" || exit 1
+        curl -f "$$CLIENT_URL" | grep -q "<!DOCTYPE html>" || exit 1
         echo "Testing WASM files..."
-        curl -f "$CLIENT_URL/_framework/blazor.webassembly.js" -I | grep -q "200" || exit 1
-        curl -f "$CLIENT_URL/_framework/blazor.boot.json" -I | grep -q "200" || exit 1
+        curl -f "$$CLIENT_URL/_framework/blazor.webassembly.js" -I | grep -q "200" || exit 1
+        curl -f "$$CLIENT_URL/_framework/blazor.boot.json" -I | grep -q "200" || exit 1
         echo "✓ Client deployment verified"
     id: 'test-client'
     waitFor: ['deploy-client']
@@ -136,11 +136,11 @@ steps:
         echo "==========================================="
         echo "✅ DEPLOYMENT COMPLETE"
         echo "==========================================="
-        API_URL=$(gcloud run services describe emailfixer-api --region us-central1 --format 'value(status.url)')
-        CLIENT_URL=$(gcloud run services describe emailfixer-client --region us-central1 --format 'value(status.url)')
+        API_URL=$$(gcloud run services describe emailfixer-api --region us-central1 --format 'value(status.url)')
+        CLIENT_URL=$$(gcloud run services describe emailfixer-client --region us-central1 --format 'value(status.url)')
         echo ""
-        echo "API Service: $API_URL"
-        echo "Client Service: $CLIENT_URL"
+        echo "API Service: $$API_URL"
+        echo "Client Service: $$CLIENT_URL"
         echo ""
     id: 'summary'
     waitFor: ['test-client']

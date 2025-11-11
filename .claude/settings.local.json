@@ -95,7 +95,20 @@
       "Bash(for i in {1..12})",
       "Bash(for:*)",
       "Bash(if [ $i -lt 10 ])",
-      "Bash(then sleep 30)"
+      "Bash(then sleep 30)",
+      "Bash(do sleep 30)",
+      "Bash(sha256sum:*)",
+      "Bash(xxd:*)",
+      "Bash(python3:*)",
+      "Bash(do sleep 20)",
+      "Bash(tail-80)",
+      "Bash(do echo \"\")",
+      "Bash(gcloud builds log:*)",
+      "Bash(do curl -s -I https://emailfixer-client-tqq4othz7a-uc.a.run.app/_framework/$file)",
+      "Bash(do echo 'File: $file')",
+      "Bash(do echo \"=== Testing: $file ===\" curl -s -I \"https://emailfixer-client-tqq4othz7a-uc.a.run.app/_framework/$file\")",
+      "Bash(gcloud builds triggers list:*)",
+      "Bash(gcloud builds triggers create:*)"
     ],
     "deny": [],
     "ask": []

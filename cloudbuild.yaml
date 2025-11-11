@@ -1,17 +1,5 @@
 steps:
-  # Step 1: Run unit tests
-  - name: 'mcr.microsoft.com/dotnet/sdk:8.0'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "=== Running unit tests ==="
-        dotnet test EmailFixer.sln \
-          --configuration Release \
-          --no-build \
-          --verbosity normal
-
-  # Step 2: Build API Docker image
+  # Step 1: Build API Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'

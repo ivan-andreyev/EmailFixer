@@ -30,6 +30,7 @@
                 <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-3">Loading Email Fixer...</p>
+            <p style="font-size: 0.85rem; color: #666; margin-top: 2rem;">Press F12 to open Developer Tools</p>
         </div>
     </div>
 
@@ -44,6 +45,15 @@
 
     <!-- Paddle.js for payments -->
     <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+
+    <!-- Enable context menu for easier debugging -->
+    <script>
+        // Ensure context menu (right-click) is allowed on loading spinner
+        document.addEventListener('contextmenu', function(event) {
+            // Allow context menu to appear - browser will handle it
+            return true;
+        }, false);
+    </script>
 
     <!-- Blazor -->
     <script src="_framework/blazor.webassembly.js"></script>

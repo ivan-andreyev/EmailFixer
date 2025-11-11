@@ -82,6 +82,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
+            --no-cache \
             -t gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:${{ github.sha }} \
             -t gcr.io/${{ env.PROJECT_ID }}/${{ env.API_SERVICE }}:latest \
             -f EmailFixer.Api/Dockerfile \
@@ -156,6 +157,7 @@ jobs:
       - name: Build Docker image for client
         run: |
           docker build \
+            --no-cache \
             -t gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:${{ github.sha }} \
             -t gcr.io/${{ env.PROJECT_ID }}/${{ env.CLIENT_SERVICE }}:latest \
             -f EmailFixer.Client/Dockerfile \

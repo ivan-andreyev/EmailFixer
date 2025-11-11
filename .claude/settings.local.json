@@ -83,7 +83,19 @@
       "Bash(__NEW_LINE__ echo \"=== ПРОВЕРКА НОВЫХ FRAMEWORK ФАЙЛОВ ===\" echo \"\")",
       "Bash(__NEW_LINE__ echo \"=== ПРОВЕРКА СТАТУСА GITHUB ACTIONS ===\" gh run list --repo ivan-andreyev/EmailFixer --limit 1 --json status,conclusion,name)",
       "Bash(__NEW_LINE__ git add nginx.conf)",
-      "Bash(__NEW_LINE__ echo \"=== СТАТУС GITHUB ACTIONS ===\" gh run list --repo ivan-andreyev/EmailFixer --limit 1 --json status,conclusion,name,createdAt)"
+      "Bash(__NEW_LINE__ echo \"=== СТАТУС GITHUB ACTIONS ===\" gh run list --repo ivan-andreyev/EmailFixer --limit 1 --json status,conclusion,name,createdAt)",
+      "Bash(for i in {1..7})",
+      "Bash(do gh run list --repo ivan-andreyev/EmailFixer --limit 1 --json status)",
+      "Bash(if [ $i -lt 7 ])",
+      "Bash(then sleep 60)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(gcloud run revisions list:*)",
+      "Bash(gcloud run services update-traffic:*)",
+      "Bash(for i in {1..12})",
+      "Bash(for:*)",
+      "Bash(if [ $i -lt 10 ])",
+      "Bash(then sleep 30)"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,5 @@
 # Build stage
-# Force rebuild to apply nginx.conf caching fixes
+# Force rebuild with clean artifacts to fix SRI integrity mismatches
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /src
 

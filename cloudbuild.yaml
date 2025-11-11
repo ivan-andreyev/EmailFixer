@@ -20,7 +20,7 @@ steps:
     waitFor: ['build-api']
 
   # Step 3: Deploy API to Cloud Run
-  - name: 'gcr.io/cloud-builders/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -49,7 +49,7 @@ steps:
     waitFor: ['push-api-latest']
 
   # Step 4: Test API health endpoint
-  - name: 'gcr.io/cloud-builders/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -87,7 +87,7 @@ steps:
     waitFor: ['build-client']
 
   # Step 7: Deploy Client to Cloud Run
-  - name: 'gcr.io/cloud-builders/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -108,7 +108,7 @@ steps:
     waitFor: ['push-client-latest']
 
   # Step 8: Test Client deployment
-  - name: 'gcr.io/cloud-builders/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -128,7 +128,7 @@ steps:
     waitFor: ['deploy-client']
 
   # Step 9: Summary
-  - name: 'gcr.io/cloud-builders/cloud-sdk'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:latest'
     entrypoint: 'bash'
     args:
       - '-c'

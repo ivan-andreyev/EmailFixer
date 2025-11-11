@@ -176,11 +176,12 @@ jobs:
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --memory 256Mi \
-            --cpu 0.5 \
+            --memory 512Mi \
+            --cpu 1 \
             --timeout 30s \
             --max-instances 10 \
-            --min-instances 0 \
+            --min-instances 1 \
+            --concurrency=80 \
             --quiet
 
           # Get the service URL

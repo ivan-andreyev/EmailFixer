@@ -5,8 +5,6 @@ steps:
       - 'build'
       - '--no-cache'
       - '-t'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-api:${SHORT_SHA}'
-      - '-t'
       - 'gcr.io/${PROJECT_ID}/emailfixer-api:latest'
       - '-f'
       - 'EmailFixer.Api/Dockerfile'
@@ -17,7 +15,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-api:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/emailfixer-api:latest'
     id: 'push-api'
 
   - name: 'gcr.io/cloud-builders/docker'
@@ -34,7 +32,7 @@ steps:
       - 'deploy'
       - 'emailfixer-api'
       - '--image'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-api:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/emailfixer-api:latest'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -95,7 +93,7 @@ steps:
       - 'build'
       - '--no-cache'
       - '-t'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-client:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/emailfixer-client:latest'
       - '-t'
       - 'gcr.io/$PROJECT_ID/emailfixer-client:latest'
       - '-f'
@@ -108,7 +106,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-client:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/emailfixer-client:latest'
     id: 'push-client'
 
   - name: 'gcr.io/cloud-builders/docker'
@@ -125,7 +123,7 @@ steps:
       - 'deploy'
       - 'emailfixer-client'
       - '--image'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-client:${SHORT_SHA}'
+      - 'gcr.io/${PROJECT_ID}/emailfixer-client:latest'
       - '--region'
       - 'us-central1'
       - '--platform'

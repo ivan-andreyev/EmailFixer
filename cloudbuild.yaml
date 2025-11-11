@@ -11,67 +11,45 @@ steps:
       - '.'
     id: 'build-api'
 
-  # Step 3: Push API image to GCR
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-api:latest'
-    id: 'push-api'
-
+  # Step 2: Push API image to GCR
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/${PROJECT_ID}/emailfixer-api:latest'
     id: 'push-api-latest'
+    waitFor: ['build-api']
 
-  # Step 4: Deploy API to Cloud Run
-  - name: 'google.cloud.cli'
-    entrypoint: 'gcloud'
+  # Step 3: Deploy API to Cloud Run
+  - name: 'gcr.io/cloud-builders/cloud-sdk'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'emailfixer-api'
-      - '--image'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-api:latest'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--add-cloudsql-instances'
-      - '${PROJECT_ID}:us-central1:emailfixer-postgres'
-      - '--set-env-vars'
-      - 'ASPNETCORE_ENVIRONMENT=Production'
-      - '--set-secrets'
-      - 'ConnectionStrings__DefaultConnection=db-connection:latest'
-      - '--set-secrets'
-      - 'Paddle__ApiKey=paddle-api-key:latest'
-      - '--set-secrets'
-      - 'Paddle__VendorId=paddle-vendor-id:latest'
-      - '--set-secrets'
-      - 'Paddle__WebhookSecret=paddle-webhook-secret:latest'
-      - '--set-secrets'
-      - 'GoogleOAuth__ClientId=google-oauth-client-id:latest'
-      - '--set-secrets'
-      - 'GoogleOAuth__ClientSecret=google-oauth-client-secret:latest'
-      - '--set-secrets'
-      - 'Jwt__Secret=jwt-secret:latest'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1'
-      - '--timeout'
-      - '60s'
-      - '--max-instances'
-      - '10'
-      - '--min-instances'
-      - '0'
-      - '--quiet'
+      - '-c'
+      - |
+        gcloud run deploy emailfixer-api \
+          --image gcr.io/${PROJECT_ID}/emailfixer-api:latest \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --add-cloudsql-instances ${PROJECT_ID}:us-central1:emailfixer-postgres \
+          --set-env-vars ASPNETCORE_ENVIRONMENT=Production \
+          --set-secrets ConnectionStrings__DefaultConnection=db-connection:latest \
+          --set-secrets Paddle__ApiKey=paddle-api-key:latest \
+          --set-secrets Paddle__VendorId=paddle-vendor-id:latest \
+          --set-secrets Paddle__WebhookSecret=paddle-webhook-secret:latest \
+          --set-secrets GoogleOAuth__ClientId=google-oauth-client-id:latest \
+          --set-secrets GoogleOAuth__ClientSecret=google-oauth-client-secret:latest \
+          --set-secrets Jwt__Secret=jwt-secret:latest \
+          --memory 512Mi \
+          --cpu 1 \
+          --timeout 60s \
+          --max-instances 10 \
+          --min-instances 0 \
+          --quiet
     id: 'deploy-api'
     waitFor: ['push-api-latest']
 
-  # Step 5: Test API health endpoint
-  - name: 'google.cloud.cli'
+  # Step 4: Test API health endpoint
+  - name: 'gcr.io/cloud-builders/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -81,71 +59,56 @@ steps:
         API_URL=$(gcloud run services describe emailfixer-api \
           --region us-central1 \
           --format 'value(status.url)')
-        echo "API URL: $$API_URL"
+        echo "API URL: $API_URL"
         echo "Testing API health endpoint..."
-        curl -f "$$API_URL/health" || exit 1
+        curl -f "$API_URL/health" || exit 1
     id: 'test-api'
     waitFor: ['deploy-api']
 
-  # Step 6: Build Client Docker image
+  # Step 5: Build Client Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '--no-cache'
       - '-t'
       - 'gcr.io/${PROJECT_ID}/emailfixer-client:latest'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/emailfixer-client:latest'
       - '-f'
       - 'EmailFixer.Client/Dockerfile'
       - '.'
     id: 'build-client'
     waitFor: ['test-api']
 
-  # Step 7: Push Client image to GCR
+  # Step 6: Push Client image to GCR
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'gcr.io/${PROJECT_ID}/emailfixer-client:latest'
-    id: 'push-client'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/emailfixer-client:latest'
     id: 'push-client-latest'
+    waitFor: ['build-client']
 
-  # Step 8: Deploy Client to Cloud Run
-  - name: 'google.cloud.cli'
-    entrypoint: 'gcloud'
+  # Step 7: Deploy Client to Cloud Run
+  - name: 'gcr.io/cloud-builders/cloud-sdk'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'emailfixer-client'
-      - '--image'
-      - 'gcr.io/${PROJECT_ID}/emailfixer-client:latest'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1'
-      - '--timeout'
-      - '30s'
-      - '--max-instances'
-      - '10'
-      - '--min-instances'
-      - '1'
-      - '--concurrency=80'
-      - '--quiet'
+      - '-c'
+      - |
+        gcloud run deploy emailfixer-client \
+          --image gcr.io/${PROJECT_ID}/emailfixer-client:latest \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --memory 512Mi \
+          --cpu 1 \
+          --timeout 30s \
+          --max-instances 10 \
+          --min-instances 1 \
+          --concurrency 80 \
+          --quiet
     id: 'deploy-client'
     waitFor: ['push-client-latest']
 
-  # Step 9: Test Client deployment
-  - name: 'google.cloud.cli'
+  # Step 8: Test Client deployment
+  - name: 'gcr.io/cloud-builders/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -154,29 +117,30 @@ steps:
         CLIENT_URL=$(gcloud run services describe emailfixer-client \
           --region us-central1 \
           --format 'value(status.url)')
-        echo "Client URL: $$CLIENT_URL"
+        echo "Client URL: $CLIENT_URL"
         echo "Testing client loads HTML..."
-        curl -f "$$CLIENT_URL" | grep -q "<!DOCTYPE html>" || exit 1
+        curl -f "$CLIENT_URL" | grep -q "<!DOCTYPE html>" || exit 1
         echo "Testing WASM files..."
-        curl -f "$$CLIENT_URL/_framework/blazor.webassembly.js" -I | grep -q "200" || exit 1
-        curl -f "$$CLIENT_URL/_framework/blazor.boot.json" -I | grep -q "200" || exit 1
+        curl -f "$CLIENT_URL/_framework/blazor.webassembly.js" -I | grep -q "200" || exit 1
+        curl -f "$CLIENT_URL/_framework/blazor.boot.json" -I | grep -q "200" || exit 1
+        echo "✓ Client deployment verified"
     id: 'test-client'
     waitFor: ['deploy-client']
 
-  # Step 10: Summary
-  - name: 'google.cloud.cli'
+  # Step 9: Summary
+  - name: 'gcr.io/cloud-builders/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        echo "=========================================="
+        echo "==========================================="
         echo "✅ DEPLOYMENT COMPLETE"
-        echo "=========================================="
+        echo "==========================================="
         API_URL=$(gcloud run services describe emailfixer-api --region us-central1 --format 'value(status.url)')
         CLIENT_URL=$(gcloud run services describe emailfixer-client --region us-central1 --format 'value(status.url)')
         echo ""
-        echo "API Service: $$API_URL"
-        echo "Client Service: $$CLIENT_URL"
+        echo "API Service: $API_URL"
+        echo "Client Service: $CLIENT_URL"
         echo ""
     id: 'summary'
     waitFor: ['test-client']

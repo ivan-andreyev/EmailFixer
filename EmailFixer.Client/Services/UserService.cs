@@ -5,14 +5,16 @@ using EmailFixer.Shared.Models;
 namespace EmailFixer.Client.Services;
 
 /// <summary>
-/// Implementation of user management service
+/// Implementation of user management service with caching to prevent duplicate API calls
 /// </summary>
 public class UserService : IUserService
 {
     private readonly HttpClient _httpClient;
     private readonly ILocalStorageService _localStorage;
     private readonly ILogger<UserService> _logger;
+    private readonly CacheService _cacheService;
     private const string USER_KEY = "emailfixer_current_user";
+    private const string USER_CACHE_KEY_PREFIX = "user_";
 
     /// <summary>
     /// Initializes a new instance of the UserService class
@@ -20,15 +22,18 @@ public class UserService : IUserService
     /// <param name="httpClient">HTTP client for API calls</param>
     /// <param name="localStorage">Local storage service for caching user data</param>
     /// <param name="logger">Logger for diagnostic information</param>
-    public UserService(HttpClient httpClient, ILocalStorageService localStorage, ILogger<UserService> logger)
+    /// <param name="cacheService">Cache service to prevent duplicate API calls</param>
+    public UserService(HttpClient httpClient, ILocalStorageService localStorage, ILogger<UserService> logger, CacheService cacheService)
     {
         _httpClient = httpClient;
         _localStorage = localStorage;
         _logger = logger;
+        _cacheService = cacheService;
     }
 
     /// <summary>
-    /// Gets the current user from local storage and refreshes their data from the API
+    /// Gets the current user from local storage and refreshes their data from the API (with in-memory caching)
+    /// Prevents rapid re-fetches within 30 seconds
     /// </summary>
     /// <returns>Current user model or null if no user is cached</returns>
     public async Task<UserModel?> GetCurrentUserAsync()
@@ -39,6 +44,13 @@ public class UserService : IUserService
             var cachedUser = await _localStorage.GetItemAsync<UserModel>(USER_KEY);
             if (cachedUser != null)
             {
+                // Check in-memory cache first (30 second expiration)
+                string cacheKey = $"{USER_CACHE_KEY_PREFIX}{cachedUser.Id}";
+                if (_cacheService.TryGetValue<UserModel>(cacheKey, out var inMemoryCachedUser))
+                {
+                    return inMemoryCachedUser;
+                }
+
                 // Refresh from API to get latest credits
                 var refreshedUser = await GetUserByIdAsync(cachedUser.Id);
                 if (refreshedUser != null)
@@ -89,7 +101,8 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// Gets user information by user ID from the API
+    /// Gets user information by user ID from the API (with caching)
+    /// Caches results for 5 minutes to prevent rapid re-fetches
     /// </summary>
     /// <param name="userId">The user ID to retrieve</param>
     /// <returns>User model or null if user not found</returns>
@@ -97,11 +110,27 @@ public class UserService : IUserService
     {
         try
         {
+            string cacheKey = $"{USER_CACHE_KEY_PREFIX}{userId}";
+
+            // Check cache first
+            if (_cacheService.TryGetValue<UserModel>(cacheKey, out var cachedUser))
+            {
+                _logger.LogInformation("User {UserId} retrieved from cache", userId);
+                return cachedUser;
+            }
+
+            // Fetch from API if not cached
             var response = await _httpClient.GetAsync($"api/user/{userId}");
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<UserModel>();
+                var user = await response.Content.ReadFromJsonAsync<UserModel>();
+                if (user != null)
+                {
+                    // Cache for 5 minutes
+                    _cacheService.Set(cacheKey, user, TimeSpan.FromMinutes(5));
+                }
+                return user;
             }
 
             _logger.LogError("Failed to get user {UserId} with status {StatusCode}", userId, response.StatusCode);

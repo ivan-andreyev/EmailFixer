@@ -4,6 +4,21 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Blazor Production Optimizations -->
+    <!-- Trim unused assemblies to reduce bundle size -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Use ReadyToRun to pre-compile IL to native code -->
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <!-- Enable tree-shaking of CSS -->
+    <EnableBlazorWebAssemblyAotWarningsSuppression>true</EnableBlazorWebAssemblyAotWarningsSuppression>
+  </PropertyGroup>
+
+  <!-- Release-specific optimizations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <!-- Enable trimming in release builds for smaller bundle -->
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
   </PropertyGroup>
 
   <ItemGroup>

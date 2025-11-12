@@ -1,0 +1,153 @@
+# EmailFixer - Development Docker Compose
+# Альтернативная конфигурация с расширенными возможностями для разработки
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: emailfixer-postgres-dev
+    environment:
+      - POSTGRES_DB=emailfixer
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_INITDB_ARGS=-c log_statement=all
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - emailfixer-network-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      description: "PostgreSQL 16 Development Database"
+
+  # pgAdmin - PostgreSQL Web Interface (опционально)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: emailfixer-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@emailfixer.local
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - emailfixer-network-dev
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    labels:
+      description: "pgAdmin - PostgreSQL Administration Web Interface"
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: EmailFixer.Api/Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: emailfixer-api-dev
+    ports:
+      - "5165:8080"
+      - "5166:8443"
+    environment:
+      # Database
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=emailfixer;User Id=postgres;Password=postgres
+
+      # ASP.NET Core
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=
+
+      # Logging
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.AspNetCore=Warning
+      - Logging__LogLevel__Microsoft.EntityFrameworkCore=Information
+
+      # JWT
+      - Jwt__SecretKey=dev-secret-key-must-be-at-least-32-characters-long-for-testing
+      - Jwt__Issuer=emailfixer-api-dev
+      - Jwt__Audience=emailfixer-client-dev
+      - Jwt__ExpirationMinutes=1440
+
+      # OAuth (опционально)
+      - GoogleOAuth__ClientId=${GOOGLE_CLIENT_ID:-dev-client-id}
+      - GoogleOAuth__ClientSecret=${GOOGLE_CLIENT_SECRET:-dev-client-secret}
+      - GoogleOAuth__RedirectUri=http://localhost:5000/auth-callback
+
+      # Payment (Paddle/Stripe)
+      - Paddle__ApiKey=test-paddle-key
+      - Paddle__SellerId=test-seller-id
+      - Paddle__WebhookSecret=test-webhook-secret
+      - Paddle__ApiUrl=https://sandbox-api.paddle.com
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - emailfixer-network-dev
+    volumes:
+      # Для live reload (если нужно)
+      # - ./EmailFixer.Api:/app
+      # - /app/bin
+      # - /app/obj
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      description: "EmailFixer REST API (ASP.NET Core)"
+
+  # Blazor WebAssembly Client
+  client:
+    build:
+      context: .
+      dockerfile: EmailFixer.Client/Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: emailfixer-client-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - API_URL=http://api:8080
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - emailfixer-network-dev
+    volumes:
+      # Для live reload (если нужно)
+      # - ./EmailFixer.Client:/app
+      # - /app/bin
+      # - /app/obj
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    labels:
+      description: "EmailFixer Blazor WebAssembly Client"
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  emailfixer-network-dev:
+    driver: bridge
+    name: emailfixer-network-dev

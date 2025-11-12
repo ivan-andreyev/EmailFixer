@@ -108,7 +108,12 @@
       "Bash(do echo 'File: $file')",
       "Bash(do echo \"=== Testing: $file ===\" curl -s -I \"https://emailfixer-client-tqq4othz7a-uc.a.run.app/_framework/$file\")",
       "Bash(gcloud builds triggers list:*)",
-      "Bash(gcloud builds triggers create:*)"
+      "Bash(gcloud builds triggers create:*)",
+      "Bash(__NEW_LINE__ echo \"=== WAITING FOR DEPLOYMENT PIPELINE ===\")",
+      "Bash(gcloud builds list:*)",
+      "Bash(__NEW_LINE__ sleep 180)",
+      "Bash(dir /B:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,9 +1,10 @@
 @page "/"
-@implements IDisposable
+@implements IAsyncDisposable
 @inject IEmailValidationService ValidationService
 @inject IUserService UserService
 @inject INotificationService NotificationService
 @inject IJSRuntime JSRuntime
+@inject DebounceService DebounceService
 
 <PageTitle>Email Fixer - Validate Email Addresses</PageTitle>
 
@@ -17,7 +18,7 @@
                 <div class="card-body d-flex flex-column">
                     <div class="mb-3">
                         <label class="form-label">Enter email addresses (one per line):</label>
-                        <textarea @bind="EmailInput" @oninput="OnEmailInputChanged"
+                        <textarea @bind="EmailInput" @oninput="OnEmailInputChangedDebounced"
                                   class="form-control font-monospace"
                                   rows="12"
                                   placeholder="john@example.com&#10;jane@company.org&#10;info@website.net"
@@ -177,14 +178,49 @@
     private EmailCheckModel? SelectedResult = null;
     private bool ShowSuggestionModal = false;
 
-    private int EmailCount => EmailInput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-        .Where(e => !string.IsNullOrWhiteSpace(e)).Count();
+    // CACHE: Pre-computed email list to avoid O(n) recalculations on every render
+    private List<string> _cachedEmails = new();
+    private int _cachedEmailCount = 0;
+    private int _emailInputHash = 0;
+
+    // CACHE: Pre-computed status counts
+    private int _validCount = 0;
+    private int _invalidCount = 0;
+    private int _suspiciousCount = 0;
+
+    /// <summary>
+    /// Get cached email count - O(1) instead of O(n)
+    /// </summary>
+    private int EmailCount
+    {
+        get
+        {
+            int currentHash = EmailInput.GetHashCode();
+            if (currentHash != _emailInputHash)
+            {
+                // Recompute cache only when input changes
+                _cachedEmails = EmailInput
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(e => e.Trim())
+                    .Where(e => !string.IsNullOrWhiteSpace(e))
+                    .ToList();
+
+                _cachedEmailCount = _cachedEmails.Count;
+                _emailInputHash = currentHash;
+            }
+
+            return _cachedEmailCount;
+        }
+    }
 
     private bool HasSufficientCredits => CurrentUser?.CreditsAvailable >= EmailCount;
 
-    private int ValidCount => ValidationResults.Count(r => r.Status == EmailValidationStatus.Valid);
-    private int InvalidCount => ValidationResults.Count(r => r.Status == EmailValidationStatus.Invalid);
-    private int SuspiciousCount => ValidationResults.Count(r => r.Status == EmailValidationStatus.Suspicious);
+    /// <summary>
+    /// Status counts from cache, updated after validation
+    /// </summary>
+    private int ValidCount => _validCount;
+    private int InvalidCount => _invalidCount;
+    private int SuspiciousCount => _suspiciousCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -196,9 +232,27 @@
         }
     }
 
-    private void OnEmailInputChanged(ChangeEventArgs e)
+    /// <summary>
+    /// Handle input with debouncing - no rapid recalculations
+    /// </summary>
+    private void OnEmailInputChangedDebounced(ChangeEventArgs e)
     {
         EmailInput = e.Value?.ToString() ?? string.Empty;
+
+        // Debounce expensive operations (300ms delay)
+        DebounceService.Debounce("email-input", () =>
+        {
+            // This won't trigger re-render until user stops typing
+            StateHasChanged();
+        }, 300);
+    }
+
+    /// <summary>
+    /// Original method (kept for compatibility)
+    /// </summary>
+    private void OnEmailInputChanged(ChangeEventArgs e)
+    {
+        OnEmailInputChangedDebounced(e);
     }
 
     private async Task ValidateEmails()
@@ -213,12 +267,8 @@
 
         try
         {
-            var emails = EmailInput
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
-                .Where(e => !string.IsNullOrWhiteSpace(e))
-                .Distinct()
-                .ToList();
+            // Use cached emails from EmailCount property
+            var emails = _cachedEmails.Distinct().ToList();
 
             if (emails.Count == 1)
             {
@@ -251,6 +301,11 @@
 
             if (ValidationResults.Any())
             {
+                // Update cached counts - O(n) scan but only after validation, not every render
+                _validCount = ValidationResults.Count(r => r.Status == EmailValidationStatus.Valid);
+                _invalidCount = ValidationResults.Count(r => r.Status == EmailValidationStatus.Invalid);
+                _suspiciousCount = ValidationResults.Count(r => r.Status == EmailValidationStatus.Suspicious);
+
                 await NotificationService.ShowSuccess($"Validated {ValidationResults.Count} email(s)");
             }
         }
@@ -320,28 +375,52 @@
         var csv = "Email,Status,Message,Suggestion\n";
         foreach (var result in ValidationResults)
         {
-            csv += $"{result.Email},{result.Status},{result.Message},{result.SuggestedEmail}\n";
+            // Escape CSV fields properly
+            var emailField = EscapeCsvField(result.Email);
+            var statusField = EscapeCsvField(result.Status.ToString());
+            var messageField = EscapeCsvField(result.Message ?? string.Empty);
+            var suggestionField = EscapeCsvField(result.SuggestedEmail ?? string.Empty);
+
+            csv += $"{emailField},{statusField},{messageField},{suggestionField}\n";
         }
-        await DownloadFile("all_results.csv", csv);
+        await ExportToCSV("all_results.csv", csv);
     }
 
     private async Task ExportToCSV(IEnumerable<string> emails, string filename)
     {
-        var csv = string.Join("\n", emails);
-        await DownloadFile(filename, csv);
+        var csv = string.Join("\n", emails.Select(e => EscapeCsvField(e)));
+        await ExportToCSV(filename, csv);
     }
 
-    private async Task DownloadFile(string filename, string content)
+    private async Task ExportToCSV(string filename, string csv)
     {
-        await JSRuntime.InvokeVoidAsync("eval", $@"
-            const blob = new Blob(['{content}'], {{ type: 'text/csv' }});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '{filename}';
-            a.click();
-            URL.revokeObjectURL(url);
-        ");
+        // Use safe JS interop instead of eval()
+        var success = await JSRuntime.InvokeAsync<bool>("exportToCSV", csv, filename);
+        if (!success)
+        {
+            await NotificationService.ShowError("Failed to export file. Please try again.");
+        }
+        else
+        {
+            await NotificationService.ShowSuccess($"Exported to {filename}");
+        }
+    }
+
+    /// <summary>
+    /// Properly escape CSV fields to prevent injection
+    /// </summary>
+    private static string EscapeCsvField(string field)
+    {
+        if (string.IsNullOrEmpty(field))
+            return string.Empty;
+
+        // If field contains comma, quote, or newline, wrap in quotes and escape inner quotes
+        if (field.Contains(',') || field.Contains('"') || field.Contains('\n'))
+        {
+            return $"\"{field.Replace("\"", "\"\"")}\"";
+        }
+
+        return field;
     }
 
     private string GetRowClass(string status) => status switch
@@ -360,8 +439,10 @@
         _ => "bg-secondary"
     };
 
-    public void Dispose()
+    async ValueTask IAsyncDisposable.DisposeAsync()
     {
-        // Cleanup if needed
+        // Clean up debounce timers
+        DebounceService.Cancel("email-input");
+        await Task.CompletedTask;
     }
 }

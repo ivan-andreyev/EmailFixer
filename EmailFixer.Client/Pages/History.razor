@@ -49,47 +49,53 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table table-hover" style="display: block; width: 100%;">
+                        <thead style="position: sticky; top: 0; display: block; width: 100%;">
                             <tr>
-                                <th>Date</th>
-                                <th>Email</th>
-                                <th>Status</th>
-                                <th>Message</th>
-                                <th>Suggestion</th>
-                                <th>MX Record</th>
+                                <th style="width: 15%;">Date</th>
+                                <th style="width: 25%;">Email</th>
+                                <th style="width: 12%;">Status</th>
+                                <th style="width: 20%;">Message</th>
+                                <th style="width: 18%;">Suggestion</th>
+                                <th style="width: 10%;">MX Record</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach (var record in FilteredRecords)
+                        <tbody style="display: block;">
+                            @if (FilteredRecords.Any())
                             {
-                                <tr class="@GetRowClass(record.Status.ToString())">
-                                    <td>@record.CheckedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                    <td class="font-monospace">@record.Email</td>
-                                    <td>
-                                        <span class="badge @GetStatusBadgeClass(record.Status.ToString())">
-                                            @record.Status
-                                        </span>
-                                    </td>
-                                    <td>@record.Message</td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(record.SuggestedEmail))
-                                        {
-                                            <span class="text-success">@record.SuggestedEmail</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (record.MxRecordExists)
-                                        {
-                                            <i class="fas fa-check text-success"></i>
-                                        }
-                                        else
-                                        {
-                                            <i class="fas fa-times text-danger"></i>
-                                        }
-                                    </td>
-                                </tr>
+                                <Virtualize Items="@FilteredRecords" Context="record" OverscanCount="5">
+                                    <tr class="@GetRowClass(record.Status.ToString())" style="display: table; width: 100%; table-layout: fixed;">
+                                        <td style="width: 15%;">@record.CheckedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        <td class="font-monospace" style="width: 25%; word-break: break-all;">@record.Email</td>
+                                        <td style="width: 12%;">
+                                            <span class="badge @GetStatusBadgeClass(record.Status.ToString())">
+                                                @record.Status
+                                            </span>
+                                        </td>
+                                        <td style="width: 20%;">@record.Message</td>
+                                        <td style="width: 18%; word-break: break-all;">
+                                            @if (!string.IsNullOrEmpty(record.SuggestedEmail))
+                                            {
+                                                <span class="text-success">@record.SuggestedEmail</span>
+                                            }
+                                        </td>
+                                        <td style="width: 10%; text-align: center;">
+                                            @if (record.MxRecordExists)
+                                            {
+                                                <i class="fas fa-check text-success"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-times text-danger"></i>
+                                            }
+                                        </td>
+                                    </tr>
+                                </Virtualize>
+                            }
+                            else
+                            {
+                                <tr><td colspan="6" class="text-center py-4">No records found</td></tr>
                             }
                         </tbody>
                     </table>
@@ -160,9 +166,14 @@
     private string FilterStatus = string.Empty;
     private UserModel? CurrentUser = null;
 
-    private int TotalValid => HistoryRecords.Count(r => r.Status == EmailValidationStatus.Valid);
-    private int TotalInvalid => HistoryRecords.Count(r => r.Status == EmailValidationStatus.Invalid);
-    private int TotalSuspicious => HistoryRecords.Count(r => r.Status == EmailValidationStatus.Suspicious);
+    // CACHE: Pre-computed status counts (updated only on data change, not every render)
+    private int _cachedTotalValid = 0;
+    private int _cachedTotalInvalid = 0;
+    private int _cachedTotalSuspicious = 0;
+
+    private int TotalValid => _cachedTotalValid;
+    private int TotalInvalid => _cachedTotalInvalid;
+    private int TotalSuspicious => _cachedTotalSuspicious;
     private int TotalRecords => HistoryRecords.Count;
 
     protected override async Task OnInitializedAsync()
@@ -185,6 +196,7 @@
         var records = await ValidationService.GetUserHistoryAsync(CurrentUser.Id, CurrentPage * PageSize, PageSize);
         HistoryRecords.AddRange(records);
         HasMoreRecords = records.Count == PageSize;
+        UpdateCaches();
         ApplyFilter();
     }
 
@@ -210,11 +222,25 @@
         }
     }
 
+    /// <summary>
+    /// Update cached counts - only called when data changes, not every render
+    /// This prevents O(n) scans on every render
+    /// </summary>
+    private void UpdateCaches()
+    {
+        _cachedTotalValid = HistoryRecords.Count(r => r.Status == EmailValidationStatus.Valid);
+        _cachedTotalInvalid = HistoryRecords.Count(r => r.Status == EmailValidationStatus.Invalid);
+        _cachedTotalSuspicious = HistoryRecords.Count(r => r.Status == EmailValidationStatus.Suspicious);
+    }
+
     private void ClearHistory()
     {
         HistoryRecords.Clear();
         FilteredRecords.Clear();
         CurrentPage = 0;
+        _cachedTotalValid = 0;
+        _cachedTotalInvalid = 0;
+        _cachedTotalSuspicious = 0;
     }
 
     private string GetRowClass(string status) => status switch

@@ -1,0 +1,148 @@
+@using EmailFixer.Client.Services
+@implements IAsyncDisposable
+@inject IToastNotificationService ToastService
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    @foreach (var toast in _toasts)
+    {
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header @GetHeaderClass(toast.Type)">
+                <strong class="me-auto">
+                    @GetIcon(toast.Type)
+                    @GetTitle(toast.Type)
+                </strong>
+                <button type="button" class="btn-close" @onclick="() => RemoveToast(toast.Id)"></button>
+            </div>
+            <div class="toast-body">
+                @toast.Message
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ToastNotification> _toasts = new();
+    private Timer? _autoRemoveTimer;
+
+    protected override void OnInitialized()
+    {
+        if (ToastService is IToastNotificationService service)
+        {
+            service.OnNotification += HandleNotification;
+            service.OnRemoveNotification += HandleRemoveNotification;
+        }
+    }
+
+    private void HandleNotification(ToastNotification notification)
+    {
+        // Handle clear all
+        if (notification.Id == "CLEAR_ALL")
+        {
+            _toasts.Clear();
+            StateHasChanged();
+            return;
+        }
+
+        // Add new toast
+        _toasts.Add(notification);
+        StateHasChanged();
+
+        // Auto-remove after duration
+        _ = Task.Delay(notification.DurationMs).ContinueWith(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                _toasts.RemoveAll(t => t.Id == notification.Id);
+                StateHasChanged();
+            });
+        });
+    }
+
+    private void HandleRemoveNotification(string id)
+    {
+        _toasts.RemoveAll(t => t.Id == id);
+        StateHasChanged();
+    }
+
+    private void RemoveToast(string id)
+    {
+        _toasts.RemoveAll(t => t.Id == id);
+        StateHasChanged();
+    }
+
+    private string GetHeaderClass(ToastType type) => type switch
+    {
+        ToastType.Success => "bg-success text-white",
+        ToastType.Error => "bg-danger text-white",
+        ToastType.Warning => "bg-warning text-dark",
+        ToastType.Info => "bg-info text-white",
+        _ => "bg-light"
+    };
+
+    private string GetTitle(ToastType type) => type switch
+    {
+        ToastType.Success => "Success",
+        ToastType.Error => "Error",
+        ToastType.Warning => "Warning",
+        ToastType.Info => "Info",
+        _ => "Notification"
+    };
+
+    private MarkupString GetIcon(ToastType type) => type switch
+    {
+        ToastType.Success => new MarkupString("<i class=\"fas fa-check-circle me-2\"></i>"),
+        ToastType.Error => new MarkupString("<i class=\"fas fa-exclamation-circle me-2\"></i>"),
+        ToastType.Warning => new MarkupString("<i class=\"fas fa-exclamation-triangle me-2\"></i>"),
+        ToastType.Info => new MarkupString("<i class=\"fas fa-info-circle me-2\"></i>"),
+        _ => new MarkupString("")
+    };
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (ToastService is IToastNotificationService service)
+        {
+            service.OnNotification -= HandleNotification;
+            service.OnRemoveNotification -= HandleRemoveNotification;
+        }
+
+        _autoRemoveTimer?.Dispose();
+        await Task.CompletedTask;
+    }
+}
+
+<style>
+    .toast-container {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .toast {
+        min-width: 300px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border: none;
+        animation: slideInRight 0.3s ease-out;
+    }
+
+    .toast-header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        font-weight: 600;
+    }
+
+    .toast-body {
+        padding: 1rem;
+        word-wrap: break-word;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>

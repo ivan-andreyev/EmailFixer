@@ -30,7 +30,6 @@ steps:
           --region us-central1 \
           --platform managed \
           --allow-unauthenticated \
-          --add-cloudsql-instances ${PROJECT_ID}:us-central1:emailfixer-postgres \
           --set-env-vars ASPNETCORE_ENVIRONMENT=Production \
           --set-secrets ConnectionStrings__DefaultConnection=db-connection:latest \
           --set-secrets Paddle__ApiKey=paddle-api-key:latest \

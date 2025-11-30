@@ -67,7 +67,7 @@ public class CacheService
             {
                 _timers.Remove(key);
             }
-        }, null, exp, Timeout.Infinite);
+        }, null, (int)exp.TotalMilliseconds, Timeout.Infinite);
 
         _timers[key] = timer;
     }
